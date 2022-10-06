@@ -1,0 +1,3 @@
+<description>A minimal image publisher and subscriber node that uses OpenCV</description>
+<maintainer email="automaticaddison@todo.todo">automaticaddison</maintainer>
+<license>Apache License 2.0</license>

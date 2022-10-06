@@ -1,0 +1,20 @@
+[0.045s] Invoking command in '/home/carsten/ros2_test_ws/build/cpp_pubsub': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/carsten/ros2_test_ws/install/py_pubsub:/home/carsten/ros2_test_ws/install/cv_basics:/opt/ros/foxy /usr/bin/cmake --build /home/carsten/ros2_test_ws/build/cpp_pubsub -- -j8 -l8
+[0.529s] Invoked command in '/home/carsten/ros2_test_ws/build/cpp_pubsub' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/carsten/ros2_test_ws/install/py_pubsub:/home/carsten/ros2_test_ws/install/cv_basics:/opt/ros/foxy /usr/bin/cmake --build /home/carsten/ros2_test_ws/build/cpp_pubsub -- -j8 -l8
+[0.572s] Invoking command in '/home/carsten/ros2_test_ws/build/cpp_pubsub': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/carsten/ros2_test_ws/install/py_pubsub:/home/carsten/ros2_test_ws/install/cv_basics:/opt/ros/foxy /usr/bin/cmake --install /home/carsten/ros2_test_ws/build/cpp_pubsub
+[0.585s] -- Install configuration: ""
+[0.586s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/ament_index/resource_index/package_run_dependencies/cpp_pubsub
+[0.586s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/ament_index/resource_index/parent_prefix_path/cpp_pubsub
+[0.586s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/environment/ament_prefix_path.sh
+[0.586s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/environment/ament_prefix_path.dsv
+[0.586s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/environment/path.sh
+[0.587s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/environment/path.dsv
+[0.587s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/local_setup.bash
+[0.587s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/local_setup.sh
+[0.587s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/local_setup.zsh
+[0.587s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/local_setup.dsv
+[0.588s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/package.dsv
+[0.588s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/ament_index/resource_index/packages/cpp_pubsub
+[0.588s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/cmake/cpp_pubsubConfig.cmake
+[0.588s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/cmake/cpp_pubsubConfig-version.cmake
+[0.589s] -- Up-to-date: /home/carsten/ros2_test_ws/install/cpp_pubsub/share/cpp_pubsub/package.xml
+[0.590s] Invoked command in '/home/carsten/ros2_test_ws/build/cpp_pubsub' returned '0': CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}:/home/carsten/ros2_test_ws/install/py_pubsub:/home/carsten/ros2_test_ws/install/cv_basics:/opt/ros/foxy /usr/bin/cmake --install /home/carsten/ros2_test_ws/build/cpp_pubsub

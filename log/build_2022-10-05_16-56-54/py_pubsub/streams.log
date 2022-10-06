@@ -1,0 +1,39 @@
+[1.509s] Invoking command in '/home/carsten/ros2_test_ws/src/py_pubsub': PYTHONPATH=/home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/py_pubsub build --build-base /home/carsten/ros2_test_ws/build/py_pubsub/build install --prefix /home/carsten/ros2_test_ws/install/py_pubsub --record /home/carsten/ros2_test_ws/build/py_pubsub/install.log --single-version-externally-managed
+[1.892s] running egg_info
+[1.893s] creating ../../build/py_pubsub/py_pubsub.egg-info
+[1.893s] writing ../../build/py_pubsub/py_pubsub.egg-info/PKG-INFO
+[1.893s] writing dependency_links to ../../build/py_pubsub/py_pubsub.egg-info/dependency_links.txt
+[1.893s] writing entry points to ../../build/py_pubsub/py_pubsub.egg-info/entry_points.txt
+[1.894s] writing requirements to ../../build/py_pubsub/py_pubsub.egg-info/requires.txt
+[1.894s] writing top-level names to ../../build/py_pubsub/py_pubsub.egg-info/top_level.txt
+[1.895s] writing manifest file '../../build/py_pubsub/py_pubsub.egg-info/SOURCES.txt'
+[1.986s] reading manifest file '../../build/py_pubsub/py_pubsub.egg-info/SOURCES.txt'
+[1.987s] writing manifest file '../../build/py_pubsub/py_pubsub.egg-info/SOURCES.txt'
+[1.988s] running build
+[1.988s] running build_py
+[1.989s] creating /home/carsten/ros2_test_ws/build/py_pubsub/build
+[1.989s] creating /home/carsten/ros2_test_ws/build/py_pubsub/build/lib
+[1.990s] creating /home/carsten/ros2_test_ws/build/py_pubsub/build/lib/py_pubsub
+[1.990s] copying py_pubsub/__init__.py -> /home/carsten/ros2_test_ws/build/py_pubsub/build/lib/py_pubsub
+[1.990s] copying py_pubsub/subscriber_member_function.py -> /home/carsten/ros2_test_ws/build/py_pubsub/build/lib/py_pubsub
+[1.991s] copying py_pubsub/publisher_member_function.py -> /home/carsten/ros2_test_ws/build/py_pubsub/build/lib/py_pubsub
+[1.999s] running install
+[2.000s] running install_lib
+[2.002s] creating /home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages/py_pubsub
+[2.002s] copying /home/carsten/ros2_test_ws/build/py_pubsub/build/lib/py_pubsub/__init__.py -> /home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages/py_pubsub
+[2.002s] copying /home/carsten/ros2_test_ws/build/py_pubsub/build/lib/py_pubsub/subscriber_member_function.py -> /home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages/py_pubsub
+[2.002s] copying /home/carsten/ros2_test_ws/build/py_pubsub/build/lib/py_pubsub/publisher_member_function.py -> /home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages/py_pubsub
+[2.003s] byte-compiling /home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages/py_pubsub/__init__.py to __init__.cpython-38.pyc
+[2.004s] byte-compiling /home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages/py_pubsub/subscriber_member_function.py to subscriber_member_function.cpython-38.pyc
+[2.005s] byte-compiling /home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages/py_pubsub/publisher_member_function.py to publisher_member_function.cpython-38.pyc
+[2.005s] running install_data
+[2.006s] creating /home/carsten/ros2_test_ws/install/py_pubsub/share/ament_index
+[2.006s] creating /home/carsten/ros2_test_ws/install/py_pubsub/share/ament_index/resource_index
+[2.006s] creating /home/carsten/ros2_test_ws/install/py_pubsub/share/ament_index/resource_index/packages
+[2.006s] copying resource/py_pubsub -> /home/carsten/ros2_test_ws/install/py_pubsub/share/ament_index/resource_index/packages
+[2.006s] copying package.xml -> /home/carsten/ros2_test_ws/install/py_pubsub/share/py_pubsub
+[2.006s] running install_egg_info
+[2.008s] Copying ../../build/py_pubsub/py_pubsub.egg-info to /home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages/py_pubsub-0.0.0-py3.8.egg-info
+[2.010s] running install_scripts
+[2.047s] writing list of installed files to '/home/carsten/ros2_test_ws/build/py_pubsub/install.log'
+[2.079s] Invoked command in '/home/carsten/ros2_test_ws/src/py_pubsub' returned '0': PYTHONPATH=/home/carsten/ros2_test_ws/install/py_pubsub/lib/python3.8/site-packages:${PYTHONPATH} /usr/bin/python3 setup.py egg_info --egg-base ../../build/py_pubsub build --build-base /home/carsten/ros2_test_ws/build/py_pubsub/build install --prefix /home/carsten/ros2_test_ws/install/py_pubsub --record /home/carsten/ros2_test_ws/build/py_pubsub/install.log --single-version-externally-managed

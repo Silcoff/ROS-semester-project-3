@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'handtracker'
+package_name = 'cv_basics'
 
 setup(
     name=package_name,
@@ -20,6 +20,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'img_publisher = cv_basics.webcam_pub:main',
+            'img_subscriber = cv_basics.webcam_sub:main',
+            'show_center_depth = cv_basics.show_center_depth:main',
         ],
     },
 )

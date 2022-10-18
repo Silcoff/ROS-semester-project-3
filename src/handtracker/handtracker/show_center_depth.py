@@ -9,7 +9,7 @@ import cv2 as cv
 class ImageListener(Node):
     # this funciton will run when the class is called upon
     def __init__(self, color_image_topic):
-        super().__init__('show_center_depth')
+        super().__init__('test_code')
         # we instantiate the cvbridge oject
         self.bridge = CvBridge()
 

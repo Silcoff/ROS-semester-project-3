@@ -1,0 +1,5 @@
+ros2 launch ur_bringup ur_control.launch.py ur_type:=ur10 robot_ip:=192.168.0.100 use_fake_hardware:=false fake_sensor_commands:=false robot_controller:=joint_trajectory_controller launch_rviz:=true
+
+ros2 launch ur_bringup ur_moveit.launch.py ur_type:=ur10 robot_ip:=192.168.0.100 use_fake_hardware:=false fake_sensor_commands:=false robot_controller:=joint_trajectory_controller launch_rviz:=true
+
+ros2 launch ur_bringup ur_dashboard_client.launch.py ur_type:=ur10 robot_ip:=192.168.0.100 use_fake_hardware:=false fake_sensor_commands:=false robot_controller:=joint_trajectory_controller launch_rviz:=true

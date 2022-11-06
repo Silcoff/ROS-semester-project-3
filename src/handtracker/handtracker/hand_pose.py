@@ -23,18 +23,13 @@ class ImageListener(Node):
 
 
 
-    def imageColorCallback(self, data):
-            # here the data passed in is converted into a cv2 array with a heigt and width of the realsense camera with a pixel like BGR
-            self.cv_image = self.bridge.imgmsg_to_cv2(data, data.encoding)
+    def imageColorCallback(self, raw_camera_data):
 
-            # here we take the bgr image and use opencv to turn it into rgb
-            self.rgb_cv_image =cv.cvtColor(self.cv_image, cv.COLOR_BGR2RGB)
 
 
             self.pose_msg = Vector3()
-            
-            # the converted image we then convert into a ROS msg and the publish it
-            self.pub.publish(self.bridge.cv2_to_imgmsg(self.rgb_cv_image))
+
+            self.pub.publish(self.pose_msg)
 
 
 

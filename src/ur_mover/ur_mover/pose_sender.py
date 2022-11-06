@@ -1,7 +1,6 @@
 # Import the necessary libraries
 import rclpy # Python Client Library for ROS 2
 from rclpy.node import Node # Handles the creation of nodes
-from moveit_msgs.msg import CartesianPoint
 from geometry_msgs.msg import Vector3
 import numpy as np
 
@@ -10,6 +9,7 @@ class poseSender(Node):
     # this funciton will run when the class is called upon
     def __init__(self):
         super().__init__('pose_sender')
+        self.create_subscription(Vector3,"hand_pose_msg",self.poseCallback,1)
 
         self.pub = self.create_publisher(Vector3, 'pose_msg', 1)
         self.poseCallback()
@@ -17,42 +17,23 @@ class poseSender(Node):
         # self.timer = self.create_timer(timer_period, self.poseCallback)
 
 
-    def quaternion_from_euler(self, ai, aj, ak):
-        # ai /= 2.0
-        # aj /= 2.0
-        # ak /= 2.0
-        # ci = math.cos(ai)
-        # si = math.sin(ai)
-        # cj = math.cos(aj)
-        # sj = math.sin(aj)
-        # ck = math.cos(ak)
-        # sk = math.sin(ak)
-        # cc = ci*ck
-        # cs = ci*sk
-        # sc = si*ck
-        # ss = si*sk
-
-        # q = np.empty((4, ))
-        # q[0] = cj*sc - sj*cs
-        # q[1] = cj*ss + sj*cc
-        # q[2] = cj*cs - sj*sc
-        # q[3] = cj*cc + sj*ss
+    def world_to_base(self, ai, aj, ak):
 
         R = np.array([  [0.7071068, -0.7071068,  0.0000000], [  0.7071068,  0.7071068,  0.0000000],[0.0000000,  0.0000000,  1.0000000 ]])
 
         P = np.array([ai,aj,ak])
-        q = [0,0,0]
-
         # print(R*P)
+
+        q = [0,0,0]
+        
         q[0] = R[0][0] * ai + R[0][1] * aj + R[0][2] * ak
         q[1] = R[1][0] * ai + R[1][1] * aj + R[1][2] * ak
         q[2] = R[2][0] * ai + R[2][1] * aj + R[2][2] * ak
-        
 
 
         return q
 
-    def poseCallback(self):
+    def poseCallback(self,hand_msg):
 
         while(True):
             self.pose_msg = Vector3()
@@ -61,7 +42,7 @@ class poseSender(Node):
             self.y = float(input("y: "))
             self.z = float(input("z: "))
 
-            self.result=self.quaternion_from_euler(self.x,self.y,self.z)
+            self.result=self.world_to_base(self.x,self.y,self.z)
 
             self.pose_msg.x = self.result[0]
             self.pose_msg.y = self.result[1]

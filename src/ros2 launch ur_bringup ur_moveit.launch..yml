@@ -1,4 +1,4 @@
-ros2 launch ur_bringup ur_control.launch.py ur_type:=ur10 robot_ip:=172.31.1.115 use_fake_hardware:=false fake_sensor_commands:=false robot_controller:=joint_trajectory_controller launch_rviz:=true reverse_ip:=172.31.1.110
+ros2 launch ur_bringup ur_control.launch.py ur_type:=ur10 robot_ip:=172.31.1.115 use_fake_hardware:=false fake_sensor_commands:=false robot_controller:=joint_trajectory_controller launch_rviz:=false reverse_ip:=172.31.1.110
 
 ros2 launch ur_bringup ur_moveit.launch.py ur_type:=ur10 robot_ip:=172.31.1.115 use_fake_hardware:=false fake_sensor_commands:=false robot_controller:=joint_trajectory_controller launch_rviz:=true reverse_ip:=172.31.1.110
 

@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'ur-mover'
+package_name = 'ur_mover'
 
 setup(
     name=package_name,
@@ -20,6 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'pose_sender = ur_mover.pose_sender:main',
         ],
     },
 )

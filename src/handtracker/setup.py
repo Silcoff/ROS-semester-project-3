@@ -21,6 +21,7 @@ setup(
     entry_points={
         'console_scripts': [
             'test_code = handtracker.show_center_depth:main',
+            'hand_pose = handtracker.hand_pose:main',
         ],
     },
 )

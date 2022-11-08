@@ -14,11 +14,23 @@ class ImageListener(Node):
     def __init__(self, depth_image_topic, depth_info_topic):
         super().__init__('show_center_depth')
         self.bridge = CvBridge()
-        self.sub = self.create_subscription(msg_Image, depth_image_topic, self.imageDepthCallback, 1)
+        self.sub = self.create_subscription(msg_Image, depth_image_topic, self.centerDepthCallback, 1)
         # self.sub_info = self.create_subscription(CameraInfo, depth_info_topic, self.imageDepthInfoCallback, 1)
         self.intrinsics = None
         self.pix = None
         self.pix_grade = None
+
+
+    def centerDepthCallback(self, data):
+        try:
+            cv_image = self.bridge.imgmsg_to_cv2(data, data.encoding)
+            pix = (data.width/2, data.height/2)
+            sys.stdout.write('%s: Depth at center(%d, %d): %f(mm)\r' % ("self.topic", pix[0], pix[1], cv_image[int(pix[1]), int(pix[0])]))
+            sys.stdout.flush()
+        except CvBridgeError as e:
+            print(e)
+            return
+
 
     def imageDepthCallback(self, data):
         try:
@@ -26,9 +38,12 @@ class ImageListener(Node):
             # pick one pixel among all the pixels with the closest range:
             indices = np.array(np.where(cv_image == cv_image[cv_image > 0].min()))[:,0]
             pix = (indices[1], indices[0])
+            print(indices)
+            sys.stdout.flush()
+
             self.pix = pix
-            # line = '\rDepth at pixel(%3d, %3d): %7.1f(mm).' % (pix[0], pix[1], cv_image[pix[1], pix[0]])
-            line = '\rDepth at pixel(%3d, %3d): %7.1f(mm).%g' % (pix[1], pix[0], cv_image[pix[1], pix[0]], cv_image)
+            line = '\rDepth at pixel(%3d, %3d): %7.1f(mm).' % (pix[0], pix[1], cv_image[pix[1], pix[0]])
+            # line = '\rDepth at pixel(%3d, %3d): %7.1f(mm).%g' % (pix[1], pix[0], cv_image[pix[1], pix[0]], cv_image)
 
             if self.intrinsics:
                 depth = cv_image[pix[1], pix[0]]
@@ -37,8 +52,8 @@ class ImageListener(Node):
             if (not self.pix_grade is None):
                 line += ' Grade: %2d' % self.pix_grade
             line += '\r'
-            sys.stdout.write(line)
-            sys.stdout.flush()
+            # sys.stdout.write(line)
+            # sys.stdout.flush()
 
         except CvBridgeError as e:
             print(e)

@@ -6,24 +6,37 @@ from realsense_depth import *
 import matplotlib.pyplot as plt
 import math
 
-self.upperThresh = 70
-self.lowerThresh = 40
-self.dc = DepthCamera()
-self.Height  = 300
-self.Width   = 500
-self.FOV = [69,42] 
-self.margin = 60
+upperThresh = 70
+lowerThresh = 40
 
-def find_hand_callback(self):
-    ret, depth_frame, img = self.dc.get_frame()
+# capture = cv.VideoCapture(1)
+dc = DepthCamera()
+
+plotCount = 0
+plot = np.zeros((50,3))
+fig, T1 = plt.subplots()
+
+Height  = 300
+Width   = 500
+
+FOV = [69,42] 
+
+# def changeRes(width,height): #resizing funtion that only works on live video
+#     capture.set(3,width)
+#     capture.set(4,height)
+
+margin = 60
+
+while True:
+    ret, depth_frame, img = dc.get_frame()
     
-    dCrop = depth_frame[self.margin:depth_frame.shape[0]-self.margin, self.margin:depth_frame.shape[1]-self.margin]
+    dCrop = depth_frame[margin:depth_frame.shape[0]-margin, margin:depth_frame.shape[1]-margin]
 
-    img = img[self.margin:img.shape[0]-self.margin, self.margin:img.shape[1]-self.margin]
+    img = img[margin:img.shape[0]-margin, margin:img.shape[1]-margin]
     gray = cv.cvtColor(img, cv.COLOR_BGR2GRAY) #converts an image to grayscale
     gray = cv.GaussianBlur(gray, (3,3), cv.BORDER_DEFAULT)
 
-    canny = cv.Canny(gray, self.lowerThresh, self.upperThresh)
+    canny = cv.Canny(gray, lowerThresh, upperThresh)
 
     kSize = 100
     kernel = np.ones((kSize, kSize), np.uint8)
@@ -40,18 +53,42 @@ def find_hand_callback(self):
     maxX = 0
     maxY = 0
     maxVal = 0
-    for y in range(self.Height):
-        for x in range(self.Width):
+    for y in range(Height):
+        for x in range(Width):
             if distTrans[y,x] != 0 and distTrans[y,x] > maxVal:
                 maxVal = distTrans[y,x]
                 maxX = x
                 maxY = y
     
-    angX = (maxX * (self.FOV[0]/self.Width)) - self.FOV[0]/2
-    angY = (maxY * (self.FOV[1]/self.Height)) - self.FOV[1]/2
+    angX = (maxX * (FOV[0]/Width)) - FOV[0]/2
+    angY = (maxY * (FOV[1]/Height)) - FOV[1]/2
     d = dCrop[maxY,maxX]
 
     xPos = math.sin(math.radians(angX))*d
     yPos = math.sin(math.radians(angY))*d
     zPos = d
     # zPos = math.sqrt(xPos*xPos + yPos*yPos + d*d)
+
+    if plotCount < 50:
+        plot[plotCount] = (xPos, yPos, zPos)
+        plotCount += 1
+
+    if d != 0:
+        cv.circle(final, (maxX,maxY), 20, (255,0,255), thickness=3)
+        cv.putText(final, str([int(xPos), int(yPos), int(zPos)]), (maxX,maxY), cv.FONT_HERSHEY_PLAIN, 1, (0, 128, 0), 2)
+        cv.putText(final, str([int(angX), int(angY), int(d)]), (maxX,maxY+20), cv.FONT_HERSHEY_PLAIN, 1, (0, 128, 0), 2)
+    else:
+        cv.circle(final, (maxX,maxY), 20, (0,0,255), thickness=3)
+        cv.putText(final, "Distance Error", (maxX-60,maxY+35), cv.FONT_HERSHEY_PLAIN, 1, (0, 0, 255), 2)
+
+    cv.imshow("Image1", final)
+    # cv.imshow("Image2", canny)
+
+    if cv.waitKey(20) & 0xFF == ord(' '): #breaks the loop when space is pressed
+        break
+
+T1.scatter(plot[:,0], plot[:,1], (plot[:,2]-200)*10)
+
+plt.show()
+
+cv.destroyAllWindows()

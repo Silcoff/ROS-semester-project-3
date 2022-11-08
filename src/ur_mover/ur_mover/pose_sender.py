@@ -4,52 +4,92 @@ from rclpy.node import Node # Handles the creation of nodes
 from geometry_msgs.msg import Vector3
 import numpy as np
 
-
 class poseSender(Node):
     # this funciton will run when the class is called upon
     def __init__(self):
         super().__init__('pose_sender')
-        self.create_subscription(Vector3,"hand_pose_msg",self.poseCallback,1)
+        self.sub = self.create_subscription(Vector3,"hand_pose_msg",self.poseCallback,1)
 
         self.pub = self.create_publisher(Vector3, 'pose_msg', 1)
-        self.poseCallback()
+        # self.poseCallback()
         # timer_period = 0.5  # seconds
         # self.timer = self.create_timer(timer_period, self.poseCallback)
 
 
-    def world_to_base(self, ai, aj, ak):
+    def frame3_to_frame1(self, ai, aj, ak):
 
-        R = np.array([  [0.7071068, -0.7071068,  0.0000000], [  0.7071068,  0.7071068,  0.0000000],[0.0000000,  0.0000000,  1.0000000 ]])
+        frame12 = np.array([    [0.7071068, -0.7071068,  0.0000000, 0.0000000], 
+                                [0.7071068,  0.7071068,  0.0000000, 0.0000000],
+                                [0.0000000,  0.0000000,  1.0000000, 0.0000000],
+                                [0.0000000,  0.0000000,  0.0000000, 1.0000000]])
 
-        P = np.array([ai,aj,ak])
-        # print(R*P)
+        frame23 = np.array([    [1.0,  0.0,  0.0,    1.0], 
+                                [0.0,  1.0,  0.0,    0.0],
+                                [0.0,  0.0,  1.0,   -0.1],
+                                [0.0,  0.0,  0.0,    1.0]])
 
-        q = [0,0,0]
-        
-        q[0] = R[0][0] * ai + R[0][1] * aj + R[0][2] * ak
-        q[1] = R[1][0] * ai + R[1][1] * aj + R[1][2] * ak
-        q[2] = R[2][0] * ai + R[2][1] * aj + R[2][2] * ak
+        frame13=np.dot(frame12,frame23)
+
+        frame31=np.linalg.inv(frame13)
 
 
+        P = np.array([ai,aj,ak,1])
+        v = np.dot(frame13,P)
+        q=v[0:3]
         return q
 
-    def poseCallback(self,hand_msg):
 
-        while(True):
-            self.pose_msg = Vector3()
+    def poseCallback(self,data):
+        self.x= float(data.x)/1000
+        self.y= float(data.y)/1000
+        self.z= float(data.z)/1000
+        print(data.x)
+        print(data.y)
+        print(data.z)
+
+
+
+
+        # self.x = float(input("x: "))
+        # self.y = float(input("y: "))
+        # self.z = float(input("z: "))
+
+
+
+        self.frame31=self.frame3_to_frame1(self.x,self.y,self.z)
+
+
+
+        self.pose_msg = Vector3()
+        
+
+        # self.result=self.base_to_frame1(self.x,self.y,self.z)
+
+        self.pose_msg.x = float(self.frame31[0])
+        self.pose_msg.y = float(self.frame31[1])
+        self.pose_msg.z = float(self.frame31[2])
+        
+
+
+        print(self.pose_msg)
+        self.pub.publish(self.pose_msg)
+
+
+        # while(True):
+        #     self.pose_msg = Vector3()
             
-            self.x = float(input("x: "))
-            self.y = float(input("y: "))
-            self.z = float(input("z: "))
+        #     self.x = float(input("x: "))
+        #     self.y = float(input("y: "))
+        #     self.z = float(input("z: "))
 
-            self.result=self.world_to_base(self.x,self.y,self.z)
+        #     self.result=self.base_to_frame1(self.x,self.y,self.z)
 
-            self.pose_msg.x = self.result[0]
-            self.pose_msg.y = self.result[1]
-            self.pose_msg.z = self.result[2]
+        #     self.pose_msg.x = self.result[0]
+        #     self.pose_msg.y = self.result[1]
+        #     self.pose_msg.z = self.result[2]
             
-            print(self.pose_msg)
-            self.pub.publish(self.pose_msg)
+        #     print(self.pose_msg)
+        #     self.pub.publish(self.pose_msg)
 
 
 

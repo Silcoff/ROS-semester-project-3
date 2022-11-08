@@ -1,9 +1,13 @@
+import pyrealsense2 as rs
+import numpy as np
+
 # Import the necessary libraries
 import rclpy # Python Client Library for ROS 2
 from rclpy.node import Node # Handles the creation of nodes
 from sensor_msgs.msg import Image as msg_Image # Image is the message type
 from geometry_msgs.msg import Vector3
 
+from std_msgs.msg import Bool
 
 from cv_bridge import CvBridge
 import cv2 as cv
@@ -12,8 +16,45 @@ import cv2 as cv
 
 from turtle import width
 import numpy as np
-from realsense_depth import *
+# from realsense_depth import *
 import math
+
+
+
+class DepthCamera:
+    def __init__(self):
+        # Configure depth and color streams
+        self.pipeline = rs.pipeline()
+        config = rs.config()
+
+        # Get device product line for setting a supporting resolution
+        pipeline_wrapper = rs.pipeline_wrapper(self.pipeline)
+        pipeline_profile = config.resolve(pipeline_wrapper)
+        device = pipeline_profile.get_device()
+        device_product_line = str(device.get_info(rs.camera_info.product_line))
+
+        config.enable_stream(rs.stream.depth, 640, 480, rs.format.z16, 30)
+        config.enable_stream(rs.stream.color, 640, 480, rs.format.bgr8, 30)
+
+
+
+        # Start streaming
+        self.pipeline.start(config)
+
+    def get_frame(self):
+        frames = self.pipeline.wait_for_frames()
+        depth_frame = frames.get_depth_frame()
+        color_frame = frames.get_color_frame()
+
+        depth_image = np.asanyarray(depth_frame.get_data())
+        color_image = np.asanyarray(color_frame.get_data())
+        if not depth_frame or not color_frame:
+            return False, None, None
+        return True, depth_image, color_image
+
+    def release(self):
+        self.pipeline.stop()
+
 
 
 
@@ -23,6 +64,8 @@ class ImageListener(Node):
         super().__init__('test_code')
         # we instantiate the cvbridge oject
         self.bridge = CvBridge()
+
+        self.searchBool = True
 
         self.upperThresh = 70
         self.lowerThresh = 40
@@ -38,15 +81,22 @@ class ImageListener(Node):
 
         # we create a publisher, where the first intput is the msg type, seconde is the topic name, last is unkown
         self.pub = self.create_publisher(Vector3, 'hand_pose_msg', 1)
-
-        timer_period = 0.5  # seconds
+        self.create_subscription(Bool, 'searchBool',self.change_Bool_callback,0)
+        timer_period = 5  # seconds
         self.timer = self.create_timer(timer_period, self.find_hand_callback)
 
 
 
+    def change_Bool_callback(self,data):
 
+        self.searchBool = data
 
     def find_hand_callback(self):
+
+        if self.searchBool == False:
+            return
+
+
         ret, depth_frame, img = self.dc.get_frame()
         
         dCrop = depth_frame[self.margin:depth_frame.shape[0]-self.margin, self.margin:depth_frame.shape[1]-self.margin]
@@ -91,11 +141,13 @@ class ImageListener(Node):
         self.pose_msg = Vector3()
         
 
-        self.pose_msg[0] = xPos
-        self.pose_msg[1] = yPos
-        self.pose_msg[2] = zPos
+        self.pose_msg.x = float(xPos)
+        self.pose_msg.y = float(yPos)
+        self.pose_msg.z = float(zPos)
         # the converted image we then convert into a ROS msg and the publish it
         self.pub.publish(self.pose_msg)
+
+        self.searchBool = False
 
 
 

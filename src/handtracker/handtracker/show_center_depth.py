@@ -27,7 +27,8 @@ class ImageListener(Node):
 
             # here we take the bgr image and use opencv to turn it into rgb
             self.rgb_cv_image =cv.cvtColor(self.cv_image, cv.COLOR_BGR2RGB)
-
+            
+            print(self.rgb_cv_image)
             # the converted image we then convert into a ROS msg and the publish it
             self.pub.publish(self.bridge.cv2_to_imgmsg(self.rgb_cv_image))
 

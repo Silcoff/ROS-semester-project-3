@@ -122,15 +122,15 @@ class ImageListener(Node):
         maxX = 0
         maxY = 0
         maxVal = 0
-        for y in range(self.Height):
-            for x in range(self.Width):
+        for y in range(self.Width):
+            for x in range(self.Height):
                 if distTrans[y,x] != 0 and distTrans[y,x] > maxVal:
                     maxVal = distTrans[y,x]
                     maxX = x
                     maxY = y
         
-        angX = (maxX * (self.FOV[0]/self.Width)) - self.FOV[0]/2
-        angY = (maxY * (self.FOV[1]/self.Height)) - self.FOV[1]/2
+        angX = (maxX * (self.FOV[1]/self.Height)) - self.FOV[1]/2
+        angY = (maxY * (self.FOV[0]/self.Width)) - self.FOV[0]/2
         d = dCrop[maxY,maxX]
 
         xPos = math.sin(math.radians(angX))*d
@@ -148,6 +148,12 @@ class ImageListener(Node):
         self.pub.publish(self.pose_msg)
 
         self.searchBool = False
+
+
+
+
+
+        
 
 
 

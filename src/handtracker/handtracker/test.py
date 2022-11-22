@@ -10,12 +10,13 @@ import numpy as np
 
 import math
 import time
-import traceback
 
-
-from matplotlib import pyplot as plt
+from sensor_msgs.msg import PointCloud2 
 
 from std_msgs.msg import Bool
+
+
+import sensor_msgs
 
 
 class ImageListener(Node):
@@ -28,8 +29,9 @@ class ImageListener(Node):
         self.searchBool = True
         
         # we create an subcriber where the first input is the type of msg, second is the topic that we subscribe to, third is the callbackfunction the data will be passed to, the last element i do not know what is.
-        self.sub_bgr = self.create_subscription(msg_Image, "/camera/color/image_raw", self.colorImageCallback, 1)
-        self.sub_depth = self.create_subscription(msg_Image, "/camera/depth/image_rect_raw", self.depthImageCallback, 1)
+        # self.sub_bgr = self.create_subscription(msg_Image, "/camera/color/image_raw", self.colorImageCallback, 1)
+        # self.sub_depth = self.create_subscription(msg_Image, "/camera/depth/image_rect_raw", self.depthImageCallback, 1)
+        self.sub_depth = self.create_subscription(PointCloud2, "/depth/color/points", self.pointcloudCallback, 1)
         self.pub_bgr = self.create_publisher(msg_Image,"/rgb_image",1)
         self.pub_depth = self.create_publisher(msg_Image,"/depth_image",1)
 
@@ -40,24 +42,33 @@ class ImageListener(Node):
 
 
 
-        timer_period = 3  # seconds
-        self.timer = self.create_timer(timer_period, self.handtrackerCallback)
+        # timer_period = 1  # seconds
+        # self.timer = self.create_timer(timer_period, self.handtrackerCallback)
 
         self.rgb_image = None
         self.depth_image = None
-
+        self.stupid=True
         self.FOV = [69,42] 
 
 
 
     def change_Bool_callback(self,data):
         self.searchBool = data.data
+
+
         print(self.searchBool)
 
-    # def thresholdDepth(self):
+    def thresholdDepth(self):
+        # threshold depth image
+        ret, self.tresh_depth_lowerbound = np.array(cv.threshold(self.depth_image,200,500,cv.THRESH_TOZERO))
+        ret, self.tresh_depth_upperbound = np.array(cv.threshold(self.tresh_depth_lowerbound,650,500,cv.THRESH_TOZERO_INV))
+
+        # convert to binary
+        ret, self.depth_binary = np.array(cv.threshold(self.tresh_depth_upperbound,0,500,cv.THRESH_BINARY))
 
 
     def resizeDepthBGR(self):
+        depthWidth = self.depth_image.shape[1]
         depthHeigth = self.depth_image.shape[0]
         rgbWidth  = self.rgb_image.shape[1]
         rgbHeigth = self.rgb_image.shape[0]
@@ -65,17 +76,27 @@ class ImageListener(Node):
         widthDiff = int(abs(depthWidth-rgbWidth)/2)
 
   
-        depthWidth = self.depth_image.shape[1]
-        self.cropped_depth_image = self.depth_dialted_final[:,104:depthWidth-104]
+        self.cropped_depth_image = self.depth_image[:,104:depthWidth-104]
 
-        # print(self.cropped_depth_image.shape[1])
         self.pub_depth.publish(self.bridge.cv2_to_imgmsg(self.cropped_depth_image ))
-        self.pub_bgr.publish(self.bridge.cv2_to_imgmsg(self.rgb_image))
+        self.pub_bgr.publish(self.bridge.cv2_to_imgmsg(self.rgb_image ))
 
 
 
 
+    def pointcloudCallback(self,data):
+        
+        arr = sensor_msgs.point_cloud2.read_points(data)
+        print(arr)
 
+        # cloud_msg = PointCloud2()
+
+        # cloud_msg.is_dense(data)
+
+        # if self.stupid==True:
+        #     print(data)
+
+        #     self.stupid=False
 
 
 
@@ -83,69 +104,23 @@ class ImageListener(Node):
     def handtrackerCallback(self):
         # print("handtracker")
         if self.searchBool == False:
-            # print(self.searchBool)
+            print(self.searchBool)
             return
         try:
-
-            # depthWidth = self.depth_image.shape[1]
-            # self.cropped_depth_image = self.depth_image[:,104:848-104]
+            self.thresholdDepth()
 
 
-            lowerboundDepth = 200
-            upperboundDepth = 650
-            # threshold depth image
-            ret, self.tresh_depth_lowerbound = np.array(cv.threshold(self.depth_image,lowerboundDepth,upperboundDepth,cv.THRESH_TOZERO))
-            ret, self.tresh_depth_upperbound = np.array(cv.threshold(self.tresh_depth_lowerbound,upperboundDepth,upperboundDepth,cv.THRESH_TOZERO_INV))
-
-            # convert to binary
-            ret, self.depth_binary = np.array(cv.threshold(self.tresh_depth_upperbound,0,upperboundDepth,cv.THRESH_BINARY))
-
-
-            # ersion and dialaiton of depth image
+            # ersion and dialaiton
             self.depth_dialted = self.dilatation(20,0,self.depth_binary)
             self.depth_eroded = self.erosion(40,2,self.depth_dialted)
-            self.depth_dialted_final = np.array(self.dilatation(40,0,self.depth_eroded))
+            self.depth_dialted_final = np.array(self.dilatation(20,2,self.depth_eroded))
 
             # convert dialated depth to uint8
             self.depth_dialted_final = self.depth_dialted_final.astype('uint8')
 
-            self.tuple_depth_dialted_final = cv.cvtColor(self.depth_dialted_final,cv.COLOR_GRAY2BGR)
-
-
-
-
-            x=0
-            y=0
-            for row in self.tuple_depth_dialted_final:
-                for element in row:
-                    if (element == [0,0,0]).all():
-                        self.bgr_image[y,x]=element
-                    
-                    x+=1
-                y+=1
-                x=0
-
-            self.HSV_image = cv.cvtColor(self.bgr_image,cv.COLOR_BGR2HSV_FULL)
-
-            H_image = self.HSV_image[:,:,0]
-
-            ret, binary_H_image = np.array(cv.threshold(H_image,155,155, cv.THRESH_BINARY))
-            # ersion and dialaiton
-            self.H_image_dialted = self.dilatation(20,0,binary_H_image)
-            self.H_image_eroded = self.erosion(40,2,self.depth_dialted)
-            self.H_image_dialted_final = np.array(self.dilatation(40,0,self.depth_eroded))
-
-
-
-
-            # self.Histo_HSV = cv.calcHist(self.HSV_image,[0],None,[360],[1,360])
-
-            # plt.hist(self.HSV_image.ravel(),360,[1,360]); plt.show()
-            # time.sleep(10)
-            # plt.close()
 
             # compute distance transform on dialated depth
-            self.distTrans = cv.distanceTransform(self.depth_dialted_final, cv.DIST_L2, 3)
+            self.distTrans= cv.distanceTransform(self.depth_dialted_final, cv.DIST_L2, 3)
 
             # find max values in dialated depth
             self.max_Value_Depth = np.amax(self.distTrans)
@@ -161,12 +136,12 @@ class ImageListener(Node):
 
 
             # find depth computed from the max value coordinates 
-            self.hand_depth = self.tresh_depth_upperbound[self.isolate_XY_max_Depth_Loc[1]][self.isolate_XY_max_Depth_Loc[0]]
+            self.hand_depth = self.depth_image[self.isolate_XY_max_Depth_Loc[1]][self.isolate_XY_max_Depth_Loc[0]]
             print(self.hand_depth)
 
             
-            # publish distance-transform computed from dialateld depth 
-            self.pub_depth.publish(self.bridge.cv2_to_imgmsg(self.distTrans ))
+            # # publish distance-transform computed from dialated depth 
+            # self.pub_depth.publish(self.bridge.cv2_to_imgmsg(self.distTrans ))
 
             maxY=self.isolate_XY_max_Depth_Loc[0]
             maxX=self.isolate_XY_max_Depth_Loc[1]
@@ -188,23 +163,20 @@ class ImageListener(Node):
             self.pose_msg.y = -1*float(xPos)
             self.pose_msg.z = float(zPos)
 
-            if (self.pose_msg.z==0 or self.pose_msg.z >=1000):
+            if (self.pose_msg.z==0):
                 return
 
-
-
             # convert bgr image into rgb
-            self.rgb_image = cv.cvtColor(self.bgr_image,cv.COLOR_BGR2RGB)
+            self.rgb_image = cv.cvtColor(self.rgb_image,cv.COLOR_BGR2RGB)
 
-            # pubblish rgb image
-            self.pub_bgr.publish(self.bridge.cv2_to_imgmsg(self.H_image_dialted_final))
+            # # pubblish rgb image
+            # self.pub_bgr.publish(self.bridge.cv2_to_imgmsg(self.rgb_image))
 
             self.pub_pose.publish(self.pose_msg)
-            # self.resizeDepthBGR()
+            self.resizeDepthBGR()
 
-            # self.searchBool = False
+            self.searchBool = False
         except:
-            traceback.print_exc()
             return
 
 
@@ -215,7 +187,7 @@ class ImageListener(Node):
         # if self.searchBool == False:
         #     # print(self.searchBool)
         #     return        
-        self.bgr_image = np.array(self.bridge.imgmsg_to_cv2(data, data.encoding))
+        self.rgb_image = np.array(self.bridge.imgmsg_to_cv2(data, data.encoding))
 
         
 

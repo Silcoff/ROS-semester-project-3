@@ -183,14 +183,30 @@ class Handtracker():
                 depth_image = np.asanyarray(aligned_depth_frame.get_data())
                 color_image = np.asanyarray(color_frame.get_data())
 
+
                 lowerboundDepth = 200
                 upperboundDepth = 650
                 # threshold depth image
-                ret, binary_depth_image = np.array(cv.threshold(depth_image,lowerboundDepth,upperboundDepth,cv.THRESH_TOZERO))
-                ret, binary_depth_image = np.array(cv.threshold(binary_depth_image,upperboundDepth,upperboundDepth,cv.THRESH_TOZERO_INV))
+                ret, binary_depth_image = np.array(cv.threshold(depth_image,lowerboundDepth,2000,cv.THRESH_TOZERO))
+                ret, binary_depth_image = np.array(cv.threshold(binary_depth_image,upperboundDepth,2000,cv.THRESH_TOZERO_INV))
 
                 # convert to binary
-                ret, binary_depth_image = np.array(cv.threshold(binary_depth_image,0,upperboundDepth,cv.THRESH_BINARY))
+                ret, binary_depth_image = np.array(cv.threshold(binary_depth_image,0,2000,cv.THRESH_BINARY))
+
+                binary_depth_image = np.dstack((binary_depth_image,binary_depth_image,binary_depth_image))
+                binary_depth_image = binary_depth_image.astype(np.uint8)
+                # cv.imshow('dasf',binary_depth_image)
+                # depth_image = depth_image.astype(np.uint8)
+                # x=0
+                # y=0
+                # for row in depth_image:
+                #     for elment in row:
+                #         if (elment < 200 | elment > 1000):
+                #             depth_image[y][x] = 0
+                #         x +=1
+                #     y+=0
+                #     x=0
+
 
 
                 # Remove background - Set pixels further than self.clipping_distance to grey
@@ -198,13 +214,17 @@ class Handtracker():
                 depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
                 bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 00), grey_color, color_image)
 
+                depth_bg_removed = np.where((depth_image > self.clipping_distance) | (depth_image <= 00), grey_color, depth_image)
+
+                depth_bg_removed = depth_bg_removed.astype(np.uint8)
+                # cv.imshow('sdsf',depth_bg_removed)
                 HSV_image = cv.cvtColor(bg_removed,cv.COLOR_RGB2HSV)
 
                 H_image = HSV_image[:,:,1]
 
-                ret, H_image = cv.threshold(H_image,160,255,cv.THRESH_BINARY)
-                ret, H_image = cv.threshold(H_image,170,255,cv.THRESH_BINARY_INV)
-                ret, H_image = cv.threshold(H_image,170,255,cv.THRESH_BINARY_INV)
+                ret, H_image = cv.threshold(H_image,130,255,cv.THRESH_BINARY)
+                ret, H_image = cv.threshold(H_image,190,255,cv.THRESH_BINARY_INV)
+                ret, H_image = cv.threshold(H_image,190,255,cv.THRESH_BINARY_INV)
 
                 # H_image = np.where(H_image==0,255,0)
                 # print(H_image)
@@ -213,7 +233,7 @@ class Handtracker():
                 bg_removed_grayscale = cv.cvtColor(bg_removed,cv.COLOR_RGB2GRAY)
                 ret, binary_bg_removed = cv.threshold(bg_removed_grayscale,0,255,cv.THRESH_BINARY)
 
-                closing = self.dilatation(3,2,binary_bg_removed)
+                closing = self.dilatation(3,2,H_image)
                 closing = self.erosion(6,2,closing)
                 # closing = self.dilatation(3,2,closing)
 
@@ -257,10 +277,10 @@ class Handtracker():
                 #   depth align to color on left
                 #   depth on right
                 depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
-                images = np.hstack((depth_colormap,binary_bg_removed,closing_3d,skel_3d))
+                images = np.hstack((depth_colormap,bg_removed))
                 cv.namedWindow('Align Example', cv.WINDOW_NORMAL)
-                cv.imshow('asdf',binary_depth_image_3d)
                 cv.imshow('Align Example', images)
+                # cv.imshow('asdf',depth_image)
                 key = cv.waitKey(1)
                 # Press esc or 'q' to close the image window
                 if key & 0xFF == ord('q') or key == 27:

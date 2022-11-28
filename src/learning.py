@@ -13,6 +13,9 @@ import numpy as np
 import cv2 as cv
 
 
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import numpy as np
 
 class Handtracker():
     def __init__(self):
@@ -133,7 +136,8 @@ class Handtracker():
         y = np.reshape(y,(height,width))
         z = np.reshape(z,(height,width))
 
-        return x, y, z
+
+        return x,y,z
 
     def skeleton(self,img):
         # Step 1: Create an empty skeleton
@@ -158,6 +162,155 @@ class Handtracker():
                 break
 
         return skel
+
+    def pythoMath(self,x,y,z):
+
+
+        # These constants are to create random data for the sake of this example
+        N_POINTS = 10
+        TARGET_X_SLOPE = 2
+        TARGET_y_SLOPE = 3
+        TARGET_OFFSET  = 5
+        EXTENTS = 5
+        NOISE = 5
+
+        # Create random data.
+        # In your solution, you would provide your own xs, ys, and zs data.
+        # xs = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
+        # ys = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
+        # zs = []
+        xs = x.flatten()[::20]
+        ys = y.flatten()[::20]
+        zs = z.flatten()[::20]
+
+        # for i in range(N_POINTS):
+        #     zs.append(xs[i]*TARGET_X_SLOPE + \
+        #             ys[i]*TARGET_y_SLOPE + \
+        #             TARGET_OFFSET + np.random.normal(scale=NOISE))
+
+        # plot raw data
+        plt.figure()
+        ax = plt.subplot(111, projection='3d')
+        ax.scatter(xs, ys, zs, color='b')
+
+        # do fit
+        tmp_A = []
+        tmp_b = []
+        for i in range(len(xs)):
+            tmp_A.append([xs[i], ys[i], 1])
+            tmp_b.append(zs[i])
+        b = np.matrix(tmp_b).T
+        A = np.matrix(tmp_A)
+
+        # Manual solution
+        fit = (A.T * A).I * A.T * b
+        errors = b - A * fit
+        residual = np.linalg.norm(errors)
+
+        # Or use Scipy
+        # from scipy.linalg import lstsq
+        # fit, residual, rnk, s = lstsq(A, b)
+
+        print("solution: %f x + %f y + %f = z" % (fit[0], fit[1], fit[2]))
+        print("errors: \n", errors)
+        print("residual:", residual)
+
+        # plot plane
+        xlim = ax.get_xlim()
+        ylim = ax.get_ylim()
+        X,Y = np.meshgrid(np.arange(xlim[0], xlim[1]),
+                        np.arange(ylim[0], ylim[1]))
+        Z = np.zeros(X.shape)
+        for r in range(X.shape[0]):
+            for c in range(X.shape[1]):
+                Z[r,c] = fit[0] * X[r,c] + fit[1] * Y[r,c] + fit[2]
+        ax.plot_wireframe(X,Y,Z, color='k')
+
+        ax.set_xlabel('x')
+        ax.set_ylabel('y')
+        ax.set_zlabel('z')
+        plt.show()
+
+
+    # Fit a plane to a collection of points.
+    # Fast, and accurate to within a few degrees.
+    # Returns None if the points do not span a plane.
+    def plane_from_points(self, points): 
+        area=points.shape[0]*points.shape[1]
+        points = np.reshape(points,(area,3))    
+        # print(points)        
+
+        n = len(points)
+        if n < 3 :
+            return None
+        
+
+        sum = [0,0,0]
+        for p in points:
+            sum = sum + p
+        
+        centroid = sum * (1.0 / n)
+
+        # Calculate full 3x3 covariance matrix, excluding symmetries:
+        xx = 0.0;  xy = 0.0;   xz = 0.0
+        yy = 0.0;  yz = 0.0;   zz = 0.0
+
+        for p in points:
+            r = p - centroid
+            xx += r[0] * r[0]
+            xy += r[0] * r[1]
+            xz += r[0] * r[2]
+            yy += r[1] * r[1]
+            yz += r[1] * r[2]
+            zz += r[2] * r[2]
+        
+
+        xx /= n
+        xy /= n
+        xz /= n
+        yy /= n
+        yz /= n
+        zz /= n
+
+        weighted_dir = [0,0,0]
+
+        
+        det_x = yy*zz - yz*yz
+        axis_dir =[det_x,xz*yz - xy*zz,xy*yz - xz*yy]
+
+        weight = det_x * det_x
+        if (np.dot(weighted_dir,axis_dir) < 0.0).all(): # if vetor is worng it may be the wrong order in det fundtion
+            weight = -weight
+        weighted_dir += axis_dir * int(weight)
+        
+
+        
+        det_y = xx*zz - xz*xz
+        axis_dir = [xz*yz - xy*zz,det_y,xy*xz - yz*xx]
+
+        weight = det_y * det_y
+        
+        if (np.dot(weighted_dir,axis_dir) < 0.0).all(): # if vetor is worng it may be the wrong order in det fundtion 
+            weight = -weight 
+        weighted_dir += axis_dir * int(weight)
+    
+
+        
+        det_z = xx*yy - xy*xy
+        axis_dir = [xy*yz - xz*yy, xy*xz - yz*xx, det_z] 
+        weight = det_z * det_z
+        if (np.dot(weighted_dir,axis_dir) < 0.0).all(): # if vetor is worng it may be the wrong order in det fundtion
+            weight = -weight 
+        weighted_dir += axis_dir * int(weight)
+
+        weighted_dir = np.array(weighted_dir)
+        normal = cv.normalize(weighted_dir,(0,1))
+        if (np.isfinite(normal)).all(): 
+            return normal
+        else :
+            None
+        
+    
 
 
     def handtracker_callback(self):
@@ -185,7 +338,7 @@ class Handtracker():
 
 
                 lowerboundDepth = 200
-                upperboundDepth = 650
+                upperboundDepth = 1000
                 # threshold depth image
                 ret, binary_depth_image = np.array(cv.threshold(depth_image,lowerboundDepth,2000,cv.THRESH_TOZERO))
                 ret, binary_depth_image = np.array(cv.threshold(binary_depth_image,upperboundDepth,2000,cv.THRESH_TOZERO_INV))
@@ -195,17 +348,9 @@ class Handtracker():
 
                 binary_depth_image = np.dstack((binary_depth_image,binary_depth_image,binary_depth_image))
                 binary_depth_image = binary_depth_image.astype(np.uint8)
-                # cv.imshow('dasf',binary_depth_image)
-                # depth_image = depth_image.astype(np.uint8)
-                # x=0
-                # y=0
-                # for row in depth_image:
-                #     for elment in row:
-                #         if (elment < 200 | elment > 1000):
-                #             depth_image[y][x] = 0
-                #         x +=1
-                #     y+=0
-                #     x=0
+
+
+
 
 
 
@@ -230,11 +375,20 @@ class Handtracker():
                 # print(H_image)
                 H_image_3d = np.dstack((H_image,H_image,H_image))
 
+                H_image_depth = np.where(H_image !=0 ,  depth_image,grey_color)
+                x,y,z = self.convert_depth_frame_to_pointcloud(H_image_depth,self.camera_intrinsics)
+                # XYZ_H_image_depth = np.dstack(x,y,z)
+
+                self.pythoMath(x,y,z)
+                # normal = self.plane_from_points(XYZ_H_image_depth)
+                # if (normal == None).all() :
+                #     return
+                # print(normal)    
                 bg_removed_grayscale = cv.cvtColor(bg_removed,cv.COLOR_RGB2GRAY)
                 ret, binary_bg_removed = cv.threshold(bg_removed_grayscale,0,255,cv.THRESH_BINARY)
 
-                closing = self.dilatation(3,2,H_image)
-                closing = self.erosion(6,2,closing)
+                closing = self.dilatation(40,2,H_image)
+                closing = self.erosion(80,2,closing)
                 # closing = self.dilatation(3,2,closing)
 
                 skel =self.skeleton(closing)
@@ -260,9 +414,8 @@ class Handtracker():
                 hand_depth = depth_image[isolate_XY_max_Depth_Loc[1]][isolate_XY_max_Depth_Loc[0]]/1000
                 # print(hand_depth)
 
-                x,y,z = self.convert_depth_frame_to_pointcloud(depth_image,self.camera_intrinsics)
+                xyz = self.convert_depth_frame_to_pointcloud(depth_image,self.camera_intrinsics)
 
-                xyz= np.dstack((x,y,z))
                 distTrans = cv.normalize(distTrans,distTrans,0,1.0,cv.NORM_MINMAX)
                 distTrans = np.dstack((distTrans,distTrans,distTrans))
                 hand_coor = xyz[isolate_XY_max_Depth_Loc[1]][isolate_XY_max_Depth_Loc[0]]
@@ -273,11 +426,17 @@ class Handtracker():
                 # print(hue)
                 binary_depth_image_3d = np.dstack((binary_depth_image,binary_depth_image,binary_depth_image))
                 closing_3d = np.dstack((closing,closing,closing))
+                
+                H_image_depth_3d = np.dstack((H_image_depth,H_image_depth,H_image_depth))
+                H_image_depth_3d = H_image_depth_3d.astype(np.uint8)
                 # Render images:
                 #   depth align to color on left
                 #   depth on right
+                
+
                 depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
-                images = np.hstack((depth_colormap,bg_removed))
+                images = np.hstack((depth_colormap,H_image_3d,H_image_depth_3d))
+
                 cv.namedWindow('Align Example', cv.WINDOW_NORMAL)
                 cv.imshow('Align Example', images)
                 # cv.imshow('asdf',depth_image)
@@ -286,6 +445,8 @@ class Handtracker():
                 if key & 0xFF == ord('q') or key == 27:
                     cv.destroyAllWindows()
                     break
+        except:
+            print("fail")
         finally:
             self.pipeline.stop()
 

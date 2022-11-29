@@ -15,11 +15,17 @@ NOISE = 5
 xs = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
 ys = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
 zs = []
+
+xs = [i for i in xs if i != 0]
+ys = [i for i in ys if i != 0]
+zs = [i for i in zs if i != 0]
+
 for i in range(N_POINTS):
     zs.append(xs[i]*TARGET_X_SLOPE + \
               ys[i]*TARGET_y_SLOPE + \
               TARGET_OFFSET + np.random.normal(scale=NOISE))
 
+print(xs,ys,zs)
 # plot raw data
 plt.figure()
 ax = plt.subplot(111, projection='3d')
@@ -56,8 +62,9 @@ Z = np.zeros(X.shape)
 for r in range(X.shape[0]):
     for c in range(X.shape[1]):
         Z[r,c] = fit[0] * X[r,c] + fit[1] * Y[r,c] + fit[2]
+        # print(Z[r,c])
 ax.plot_wireframe(X,Y,Z, color='k')
-
+# print(X,Y)
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('z')

@@ -2,23 +2,9 @@ import sys
 
 
 
-# class put:
-#     def __init__(self):
-#         self.data = 0
-#     
-#     print(self.data)
 
+y= 10.12312
 
+x=int(y)
 
-
-# if true:
-#     ig=put()
-
-
-x = input("x: ")
-y = input("y: ")
-z = input("z: ")
-
-xyz=str(x+y+z)
-
-print(xyz)
+print(x)

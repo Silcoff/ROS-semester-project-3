@@ -12,3 +12,7 @@ ros2 launch ur_bringup ur_control.launch.py ur_type:=ur10 robot_ip:=172.31.1.115
 ros2 launch ur_bringup ur_moveit.launch.py ur_type:=ur10 robot_ip:=172.31.1.115 use_fake_hardware:=true fake_sensor_commands:=true robot_controller:=joint_trajectory_controller launch_rviz:=true
 
 ros2 launch ur_bringup ur_dashboard_client.launch.py ur_type:=ur10 robot_ip:=172.31.1.115 use_fake_hardware:=false fake_sensor_commands:=false robot_controller:=joint_trajectory_controller launch_rviz:=true
+
+
+# realsense camera
+ros2 launch realsense2_camera rs_launch.py depth_module.profile:=640x480x30

@@ -12,7 +12,13 @@ import numpy as np
 # Import OpenCV for easy image rendering
 import cv2 as cv
 from math import sqrt
+import traceback
 
+
+
+from geometry_msgs.msg import Pose
+
+import tf_transformations as tf
 
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
@@ -245,84 +251,6 @@ class Handtracker():
         plt.show()
         return fit
 
-
-    # # # # # # # # # # Fit a plane to a collection of points.
-    # # # # # # # # # # Fast, and accurate to within a few degrees.
-    # # # # # # # # # # Returns None if the points do not span a plane.
-    # # # # # # # # # def plane_from_points(self, points): 
-    # # # # # # # # #     area=points.shape[0]*points.shape[1]
-    # # # # # # # # #     points = np.reshape(points,(area,3))    
-    # # # # # # # # #     # print(points)        
-
-    # # # # # # # # #     n = len(points)
-    # # # # # # # # #     if n < 3 :
-    # # # # # # # # #         return None
-        
-
-    # # # # # # # # #     sum = [0,0,0]
-    # # # # # # # # #     for p in points:
-    # # # # # # # # #         sum = sum + p
-        
-    # # # # # # # # #     centroid = sum * (1.0 / n)
-
-    # # # # # # # # #     # Calculate full 3x3 covariance matrix, excluding symmetries:
-    # # # # # # # # #     xx = 0.0;  xy = 0.0;   xz = 0.0
-    # # # # # # # # #     yy = 0.0;  yz = 0.0;   zz = 0.0
-
-    # # # # # # # # #     for p in points:
-    # # # # # # # # #         r = p - centroid
-    # # # # # # # # #         xx += r[0] * r[0]
-    # # # # # # # # #         xy += r[0] * r[1]
-    # # # # # # # # #         xz += r[0] * r[2]
-    # # # # # # # # #         yy += r[1] * r[1]
-    # # # # # # # # #         yz += r[1] * r[2]
-    # # # # # # # # #         zz += r[2] * r[2]
-        
-
-    # # # # # # # # #     xx /= n
-    # # # # # # # # #     xy /= n
-    # # # # # # # # #     xz /= n
-    # # # # # # # # #     yy /= n
-    # # # # # # # # #     yz /= n
-    # # # # # # # # #     zz /= n
-
-    # # # # # # # # #     weighted_dir = [0,0,0]
-
-        
-    # # # # # # # # #     det_x = yy*zz - yz*yz
-    # # # # # # # # #     axis_dir =[det_x,xz*yz - xy*zz,xy*yz - xz*yy]
-
-    # # # # # # # # #     weight = det_x * det_x
-    # # # # # # # # #     if (np.dot(weighted_dir,axis_dir) < 0.0).all(): # if vetor is worng it may be the wrong order in det fundtion
-    # # # # # # # # #         weight = -weight
-    # # # # # # # # #     weighted_dir += axis_dir * int(weight)
-        
-
-        
-    # # # # # # # # #     det_y = xx*zz - xz*xz
-    # # # # # # # # #     axis_dir = [xz*yz - xy*zz,det_y,xy*xz - yz*xx]
-
-    # # # # # # # # #     weight = det_y * det_y
-        
-    # # # # # # # # #     if (np.dot(weighted_dir,axis_dir) < 0.0).all(): # if vetor is worng it may be the wrong order in det fundtion 
-    # # # # # # # # #         weight = -weight 
-    # # # # # # # # #     weighted_dir += axis_dir * int(weight)
-    
-
-        
-    # # # # # # # # #     det_z = xx*yy - xy*xy
-    # # # # # # # # #     axis_dir = [xy*yz - xz*yy, xy*xz - yz*xx, det_z] 
-    # # # # # # # # #     weight = det_z * det_z
-    # # # # # # # # #     if (np.dot(weighted_dir,axis_dir) < 0.0).all(): # if vetor is worng it may be the wrong order in det fundtion
-    # # # # # # # # #         weight = -weight 
-    # # # # # # # # #     weighted_dir += axis_dir * int(weight)
-
-    # # # # # # # # #     weighted_dir = np.array(weighted_dir)
-    # # # # # # # # #     normal = cv.normalize(weighted_dir,(0,1))
-    # # # # # # # # #     if (np.isfinite(normal)).all(): 
-    # # # # # # # # #         return normal
-    # # # # # # # # #     else :
-    # # # # # # # # #         None
     
 
     def dot_product(self,x, y):
@@ -341,7 +269,10 @@ class Handtracker():
 
 
     def handtracker_callback(self):
-
+        # # print("handtracker")
+        # if self.searchBool == False:
+        #     # print(self.searchBool)
+        #     return
         # Streaming loop
         try:
             while True:
@@ -482,12 +413,35 @@ class Handtracker():
                 hand_coor = xyz[isolate_XY_max_Depth_Loc[1]][isolate_XY_max_Depth_Loc[0]]
                 # print(hand_coor)
 
-                transform_hand = [[self.X_axis_normalized[0,0],self.Y_axis_normalized[0,0],self.Z_axis_normalized[0,0],hand_coor[0]],
-                                  [self.X_axis_normalized[1,0],self.Y_axis_normalized[1,0],self.Z_axis_normalized[1,0],hand_coor[1]],
-                                  [self.X_axis_normalized[2,0],self.Y_axis_normalized[2,0],self.Z_axis_normalized[2,0],hand_coor[2]],
-                                  [0                        ,0                        ,0                        ,1           ]]
+                transform_hand =  [[self.X_axis_normalized[0,0],self.Y_axis_normalized[0,0],self.Z_axis_normalized[0,0],hand_coor[0]],
+                                   [self.X_axis_normalized[1,0],self.Y_axis_normalized[1,0],self.Z_axis_normalized[1,0],hand_coor[1]],
+                                   [self.X_axis_normalized[2,0],self.Y_axis_normalized[2,0],self.Z_axis_normalized[2,0],hand_coor[2]],
+                                   [0                          ,0                          ,0                          ,1           ]]
                 
-                print(transform_hand)    
+                # print("matrix rotiation: " ,rotation_hand)
+                rotation_hand = tf.quaternion_from_matrix(transform_hand)
+                print("quaternion: " ,rotation_hand)
+                
+                hand_pose = Pose()
+
+                hand_pose._orientation._w = rotation_hand[0]
+                hand_pose._orientation._x = rotation_hand[1]
+                hand_pose._orientation._y = rotation_hand[2]
+                hand_pose._orientation._z = rotation_hand[3]
+
+                hand_pose._position._x = transform_hand[0][3]
+                hand_pose._position._y = transform_hand[1][3]
+                hand_pose._position._z = transform_hand[2][3]
+
+
+                # self.pub_pose.publish(self.hand_pose)
+
+
+                ####################################################################################
+                ######      showing images                          ################################
+                ####################################################################################
+                
+                # print(transform_hand)    
                 skel_3d = np.dstack((skel,skel,skel))
                 hue=H_image_3d[isolate_XY_max_Depth_Loc[1]][isolate_XY_max_Depth_Loc[0]]
                 # print(hue)
@@ -512,13 +466,18 @@ class Handtracker():
                 if key & 0xFF == ord('q') or key == 27:
                     cv.destroyAllWindows()
                     break
-        # except:
-        #     print("fail")
+            # self.searchBool = False
+        except:
+            traceback.print_exc()
+            return
+
+
         finally:
-            self.pipeline.stop()
+            print()
+            # self.pipeline.stop()
 
 
 
 object = Handtracker()
-# for i in range(10):
+
 object.handtracker_callback()

@@ -61,14 +61,22 @@ class ImageListener(Node):
         self.pub_pose = self.create_publisher(Pose, 'hand_pose_msg', 1)
         self.create_subscription(Bool, 'searchBool',self.change_Bool_callback,1)
 
+        self.old_positions = np.zeros((5,3))
 
-
-        timer_period = 1  # seconds
+        timer_period = 0.2  # seconds
         self.timer = self.create_timer(timer_period, self.handtracker_callback)
 
+        self.iteration = 0
 
 
 
+        #####################################
+        #####     test blob size   ##########
+        #####################################
+
+        self.blob_depth = []
+        self.blob_size1 = []
+        self.getdata = 0
 
         ##############################################
                 # Create a self.pipeline
@@ -110,7 +118,7 @@ class ImageListener(Node):
 
         # We will be removing the background of objects more than
         #  clipping_distance_in_meters meters away
-        clipping_distance_in_meters = 0.8 #1 meter
+        clipping_distance_in_meters = 0.65 #1 meter
         self.clipping_distance = clipping_distance_in_meters / depth_scale
 
         # Create an align object
@@ -130,8 +138,6 @@ class ImageListener(Node):
     def morph_shape(self,val):
         if val == 0:
             return cv.MORPH_RECT
-        elif val == 1:
-            return cv.MORPH_CROSS
         elif val == 2:
             return cv.MORPH_ELLIPSE
 
@@ -238,9 +244,9 @@ class ImageListener(Node):
         # xs = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
         # ys = [np.random.uniform(2*EXTENTS)-EXTENTS for i in range(N_POINTS)]
         # zs = []
-        xs = x.flatten()[::140]
-        ys = y.flatten()[::140]
-        zs = z.flatten()[::140]
+        xs = x.flatten()[::40]
+        ys = y.flatten()[::40]
+        zs = z.flatten()[::40]
         
         xs = [i for i in xs if i != 0]
         ys = [i for i in ys if i != 0]
@@ -273,13 +279,15 @@ class ImageListener(Node):
         errors = b - A * fit
         residual = np.linalg.norm(errors)
 
-        # # Or use Scipy
-        # # from scipy.linalg import lstsq
-        # # fit, residual, rnk, s = lstsq(A, b)
+        # Or use Scipy
+        # from scipy.linalg import lstsq
+        # fit, residual, rnk, s = lstsq(A, b)
 
+        ##### NORMAL VECTOR FOR THE PLANE ####
         # print("solution: %f x + %f y + %f = z" % (fit[0], fit[1], fit[2]))
-        # # print("errors: \n", errors)
-        # # print("residual:", residual)
+        ######################################
+        # print("errors: \n", errors)
+        # print("residual:", residual)
 
         # # plot plane
         # xlim = ax.get_xlim()
@@ -291,7 +299,7 @@ class ImageListener(Node):
         #     for c in range(X.shape[1]):
         #         Z[r,c] = fit[0] * X[r,c] + fit[1] * Y[r,c] + fit[2]
         #         # print(Z[r,c])
-        # # ax.plot_wireframe(X,Y,Z, alpha=0.2)
+        # ax.plot_wireframe(X,Y,Z, alpha=1)
         # # ax.plot_surface(X,Y,Z,alpha=0.2)
 
         # # print(X,Y)
@@ -325,6 +333,7 @@ class ImageListener(Node):
             return
         # Streaming loop
         try:
+                print("___________Beginning________________")
             # while True:
                 # Get frameset of color and depth
                 frames = self.pipeline.wait_for_frames()
@@ -346,22 +355,6 @@ class ImageListener(Node):
                 color_image = np.asanyarray(color_frame.get_data())
 
 
-                # lowerboundDepth = 200
-                # upperboundDepth = 1000
-                # # threshold depth image
-                # ret, binary_depth_image = np.array(cv.threshold(depth_image,lowerboundDepth,2000,cv.THRESH_TOZERO))
-                # ret, binary_depth_image = np.array(cv.threshold(binary_depth_image,upperboundDepth,2000,cv.THRESH_TOZERO_INV))
-
-                # # convert to binary
-                # ret, binary_depth_image = np.array(cv.threshold(binary_depth_image,0,2000,cv.THRESH_BINARY))
-
-                # binary_depth_image = np.dstack((binary_depth_image,binary_depth_image,binary_depth_image))
-                # binary_depth_image = binary_depth_image.astype(np.uint8)
-
-
-
-
-
 
                 # Remove background - Set pixels further than self.clipping_distance to grey
                 grey_color = 0
@@ -371,17 +364,18 @@ class ImageListener(Node):
                 depth_bg_removed = np.where((depth_image > self.clipping_distance) | (depth_image <= 00), grey_color, depth_image)
 
                 depth_bg_removed = depth_bg_removed.astype(np.uint8)
-                # cv.imshow('sdsf',depth_bg_removed)
                 HSV_image = cv.cvtColor(bg_removed,cv.COLOR_RGB2HSV)
 
-                H_image = HSV_image[:,:,1]
+                #### USED TO CALIBRATE THE HSV FOR THE BLUE GLOVE ######
+                # print(HSV_image[320,240])
+                ########################################################
 
-                ret, H_image = cv.threshold(H_image,130,255,cv.THRESH_BINARY)
-                ret, H_image = cv.threshold(H_image,190,255,cv.THRESH_BINARY_INV)
-                ret, H_image = cv.threshold(H_image,190,255,cv.THRESH_BINARY_INV)
+                lower_blue = np.array([5,64,2])
+                upper_blue = np.array([25,255,255])
 
-                # H_image = np.where(H_image==0,255,0)
-                # print(H_image)
+                H_image = cv.inRange(HSV_image,lower_blue,upper_blue)
+
+
                 H_image_3d = np.dstack((H_image,H_image,H_image))
 
                 H_image_depth = np.where(H_image !=0 ,  depth_image,grey_color)
@@ -403,35 +397,36 @@ class ImageListener(Node):
                 skel = self.skeleton(closing)
                 X,Y = np.where(skel==255)
 
-                if len(X)>3:
-                    
-                    a,b = np.polyfit(X,Y,1)
-                    # plt.scatter(X,Y)
-                    # plt.plot(X,a*X+b)
+                if len(X)<3:
+                    return
+                
+                a,b = np.polyfit(X,Y,1)
+                # plt.scatter(X,Y)
+                # plt.plot(X,a*X+b)
 
 
 
-                    vector = [1,a,0]
-                    Y_axis_vector = self.project_onto_plane(vector,Z_axis_vector)
-                    Y_axis_vector = np.array([Y_axis_vector[0][0,0],Y_axis_vector[1][0,0],Y_axis_vector[2][0,0]])
-                    Z_axis_vector = np.array([Z_axis_vector[0,0],Z_axis_vector[1][0,0],Z_axis_vector[2][0,0]])
+                vector = [1,a,0]
+                Y_axis_vector = self.project_onto_plane(vector,Z_axis_vector)
+                Y_axis_vector = np.array([Y_axis_vector[0][0,0],Y_axis_vector[1][0,0],Y_axis_vector[2][0,0]])
+                Z_axis_vector = np.array([Z_axis_vector[0,0],Z_axis_vector[1][0,0],Z_axis_vector[2][0,0]])
 
-                    print("y vector", Y_axis_vector)
-                    print("Z vector", Z_axis_vector)
-                    dotYZ= np.dot(Y_axis_vector,Z_axis_vector)
-                    X_axis_vector = np.array(np.cross(Y_axis_vector,Z_axis_vector))
-                    print("x vector", X_axis_vector)
-                    dotXZ= np.dot(X_axis_vector,Z_axis_vector)
-                    dotYX= np.dot(Y_axis_vector,X_axis_vector)
+                # print("y vector", Y_axis_vector)
+                # print("Z vector", Z_axis_vector)
+                dotYZ= np.dot(Y_axis_vector,Z_axis_vector)
+                X_axis_vector = np.array(np.cross(Y_axis_vector,Z_axis_vector))
+                # print("x vector", X_axis_vector)
+                dotXZ= np.dot(X_axis_vector,Z_axis_vector)
+                dotYX= np.dot(Y_axis_vector,X_axis_vector)
 
-                    
-                    print("check orthoganallity YX: " , dotYZ)
-                    print("check orthoganallity XZ: " , dotXZ)
-                    print("check orthoganallity YX: " , dotYX)
+                
+                # print("check orthoganallity YX: " , dotYZ)
+                # print("check orthoganallity XZ: " , dotXZ)
+                # print("check orthoganallity YX: " , dotYX)
 
-                    self.X_axis_normalized = cv.normalize(X_axis_vector, (0,1))
-                    self.Y_axis_normalized = cv.normalize(Y_axis_vector, (0,1))
-                    self.Z_axis_normalized = cv.normalize(Z_axis_vector, (0,1))
+                self.X_axis_normalized = cv.normalize(X_axis_vector, (0,1))
+                self.Y_axis_normalized = cv.normalize(Y_axis_vector, (0,1))
+                self.Z_axis_normalized = cv.normalize(Z_axis_vector, (0,1))
 
 
 
@@ -453,14 +448,11 @@ class ImageListener(Node):
                 cv.circle(distTrans,isolate_XY_max_Depth_Loc,20,255,thickness=3)
 
 
-                # find depth computed from the max value coordinates
-                hand_depth = depth_image[isolate_XY_max_Depth_Loc[1]][isolate_XY_max_Depth_Loc[0]]/1000
-                # print(hand_depth)
-
                 x,y,z = self.convert_depth_frame_to_pointcloud(depth_image,self.camera_intrinsics)
                 xyz = np.dstack((x,y,z))
                 distTrans = cv.normalize(distTrans,distTrans,0,1.0,cv.NORM_MINMAX)
                 distTrans = np.dstack((distTrans,distTrans,distTrans))
+                # find hand x,y computed from the max value coordinates
                 hand_coor = xyz[isolate_XY_max_Depth_Loc[1]][isolate_XY_max_Depth_Loc[0]]
                 # print(hand_coor)
 
@@ -471,7 +463,7 @@ class ImageListener(Node):
                 
                 # print("matrix rotiation: " ,rotation_hand)
                 rotation_hand = tf.quaternion_from_matrix(transform_hand)
-                print("quaternion: " ,rotation_hand)
+                # print("quaternion: " ,rotation_hand)
                 
                 hand_pose = Pose()
 
@@ -480,47 +472,127 @@ class ImageListener(Node):
                 hand_pose._orientation._z = rotation_hand[2]
                 hand_pose._orientation._w = rotation_hand[3]
 
-                hand_pose._position._x = transform_hand[0][3]
-                hand_pose._position._y = transform_hand[1][3]
+                hand_pose._position._x = transform_hand[0][3]*-1
+                hand_pose._position._y = transform_hand[1][3]*-1
                 hand_pose._position._z = transform_hand[2][3]
 
-                print("x: " ,transform_hand[0][3])
-                print("y: " ,transform_hand[1][3])
-                print("z: " ,transform_hand[2][3])
-
-                self.pub_pose.publish(hand_pose)
+                # print("x: " ,transform_hand[0][3])
+                # print("y: " ,transform_hand[1][3])
+                # print("z: " ,transform_hand[2][3])
 
 
-                # ####################################################################################
-                # ######      showing images                          ################################
-                # ####################################################################################
+
+               
+
+
+                #####################################################################################
+                #######      see if hand is in one place             ################################
+                #####################################################################################
+
+
+                print(self.iteration) 
+                self.old_positions[self.iteration] = [transform_hand[0][3]*-1,transform_hand[1][3]*-1,transform_hand[2][3]]
+                # print(self.old_positions)
+                self.iteration+= 1
+
+                dist1 =np.linalg.norm(self.old_positions[0]-self.old_positions[1])
+                dist2 =np.linalg.norm(self.old_positions[1]-self.old_positions[2])
+                dist3 =np.linalg.norm(self.old_positions[2]-self.old_positions[3])
+                dist4 =np.linalg.norm(self.old_positions[4]-self.old_positions[0])
+
+                dist_ave = (dist1 +dist2 + dist3 + dist4)/4
+                # print(dist_ave)
+                if self.iteration >= self.old_positions.shape[0]:
+                    self.iteration=0
+                    
                 
-                # # print(transform_hand)    
-                # skel_3d = np.dstack((skel,skel,skel))
-                # hue=H_image_3d[isolate_XY_max_Depth_Loc[1]][isolate_XY_max_Depth_Loc[0]]
-                # # print(hue)
-                # # binary_depth_image_3d = np.dstack((binary_depth_image,binary_depth_image,binary_depth_image))
-                # closing_3d = np.dstack((closing,closing,closing))
+                if dist_ave > 0.01:
+                    
+                    return
+                    
+                    # self.pub_pose.publish(hand_pose)
+                    # self.searchBool = False
+
+
+                #####################################################################################
+                #######      see if the blob is right size             ##############################
+                #####################################################################################
+
+
+                blob_size = 0
+                for row in closing:
+                    for element in row:
+                        if element >=1:
+                            blob_size +=1
                 
-                # H_image_depth_3d = np.dstack((H_image_depth,H_image_depth,H_image_depth))
-                # H_image_depth_3d = H_image_depth_3d.astype(np.uint8)
-                # # Render images:
-                # #   depth align to color on left
-                # #   depth on right
+                print("blob size: ", blob_size)
+                print("hand depth: ",hand_coor[2])
+
+
+
+                #calibratede konstants for exponential function
+                a = 486734.03262152773
+                b = -9.231364249894371
+
+                theoretical_blob_size = a * np.exp(b * hand_coor[2])
+
+                blob_differeants = abs(theoretical_blob_size-blob_size)
+                if blob_differeants <=2000:
+                    self.pub_pose.publish(hand_pose)
+                    self.searchBool = False
+
+                    
+
+                ########### calibration of hans size ############
+                # self.blob_depth.append(hand_coor[2])
+                # self.blob_size1.append(blob_size)
+
+                # self.x = self.blob_depth
+                # self.y = self.blob_size1
+
+                # self.getdata += 1
+                # if self.getdata > 100:
+
+                #     # # plot raw data
+                #     # plt.figure()
+                #     # ax = plt.subplot(111)
+                #     # ax.scatter(x, y, color='b')
+                #     plt.scatter(self.x, self.y, color="red", marker="o")
+                #     plt.show()
+
+                # print("blob depth: ", self.blob_depth)
+                # print("blob size: ",self.blob_size1)
+
+                #####################################################################################
+                #######      showing images                          ################################
+                #####################################################################################
+                
+                # print(transform_hand)    
+                skel_3d = np.dstack((skel,skel,skel))
+                # binary_depth_image_3d = np.dstack((binary_depth_image,binary_depth_image,binary_depth_image))
+                closing_3d = np.dstack((closing,closing,closing))
+                
+                H_image_depth_3d = np.dstack((H_image_depth,H_image_depth,H_image_depth))
+                H_image_depth_3d = H_image_depth_3d.astype(np.uint8)
+                # Render images:
+                #   depth align to color on left
+                #   depth on right
                 
 
-                # depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
-                # images = np.hstack((depth_colormap,H_image_3d,skel_3d))
+                depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
+                images = np.hstack((closing_3d,skel_3d))
 
-                # cv.namedWindow('Align Example', cv.WINDOW_NORMAL)
-                # cv.imshow('Align Example', images)
-                # # cv.imshow('asdf',depth_image)
-                # key = cv.waitKey(1)
-                # # Press esc or 'q' to close the image window
-                # if key & 0xFF == ord('q') or key == 27:
-                #     cv.destroyAllWindows()
-                #     break
-                self.searchBool = False
+                cv.namedWindow('Align Example', cv.WINDOW_NORMAL)
+                cv.imshow('Align Example', images)
+                # cv.imshow('asdf',depth_image)
+                key = cv.waitKey(1)
+                # Press esc or 'q' to close the image window
+                if key & 0xFF == ord('q') or key == 27:
+                    cv.destroyAllWindows()
+                    # break
+                # self.searchBool = False
+                print("_________________End________________")
+
         except:
             traceback.print_exc()
             return

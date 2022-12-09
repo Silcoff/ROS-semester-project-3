@@ -28,7 +28,7 @@ for i in range(N_POINTS):
 print(xs,ys,zs)
 # plot raw data
 plt.figure()
-ax = plt.subplot(111, projection='3d')
+ax = plt.subplot(111, projection='2d')
 ax.scatter(xs, ys, zs, color='b')
 
 # do fit

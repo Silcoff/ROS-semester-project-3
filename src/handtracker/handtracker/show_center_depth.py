@@ -433,7 +433,8 @@ class ImageListener(Node):
 
                 binary_bg_removed = np.dstack((binary_bg_removed,binary_bg_removed,binary_bg_removed))
 
-                distTrans = cv.distanceTransform(closing, cv.DIST_L2, 3)
+                # distTrans = cv.distanceTransform(closing, cv.DIST_L2, 3)
+                distTrans = cv.distanceTransform(H_image, cv.DIST_L2, 3)
 
                 # find max values in dialated depth
                 max_Value_Depth = np.amax(distTrans)
@@ -472,8 +473,8 @@ class ImageListener(Node):
                 hand_pose._orientation._z = rotation_hand[2]
                 hand_pose._orientation._w = rotation_hand[3]
 
-                hand_pose._position._x = transform_hand[0][3]
-                hand_pose._position._y = transform_hand[1][3]
+                hand_pose._position._x = transform_hand[0][3]*-1
+                hand_pose._position._y = transform_hand[1][3]*-1
                 hand_pose._position._z = transform_hand[2][3]
 
                 # print("x: " ,transform_hand[0][3])
@@ -509,7 +510,7 @@ class ImageListener(Node):
                     self.iteration=0
                     
                 
-                if dist_ave > 0.01:
+                if dist_ave > 0.05:
                     return
                     
                     # self.pub_pose.publish(hand_pose)
@@ -598,7 +599,7 @@ class ImageListener(Node):
                 
 
                 depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
-                images = np.hstack((closing_3d,skel_3d))
+                images = np.hstack((bg_removed,H_image_3d))
 
                 cv.namedWindow('Align Example', cv.WINDOW_NORMAL)
                 cv.imshow('Align Example', images)

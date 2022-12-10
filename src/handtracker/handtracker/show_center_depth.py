@@ -68,7 +68,7 @@ class ImageListener(Node):
 
         self.iteration = 0
 
-
+        self.when_to_start_time = 0
 
         #####################################
         #####     test blob size   ##########
@@ -359,9 +359,9 @@ class ImageListener(Node):
                 # Remove background - Set pixels further than self.clipping_distance to grey
                 grey_color = 0
                 depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
-                bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 00), grey_color, color_image)
+                bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 200), grey_color, color_image)
 
-                depth_bg_removed = np.where((depth_image > self.clipping_distance) | (depth_image <= 00), grey_color, depth_image)
+                depth_bg_removed = np.where((depth_image > self.clipping_distance) | (depth_image <= 200), grey_color, depth_image)
 
                 depth_bg_removed = depth_bg_removed.astype(np.uint8)
                 HSV_image = cv.cvtColor(bg_removed,cv.COLOR_RGB2HSV)
@@ -370,7 +370,7 @@ class ImageListener(Node):
                 # print(HSV_image[320,240])
                 ########################################################
 
-                lower_blue = np.array([5,64,2])
+                lower_blue = np.array([10,90,100])
                 upper_blue = np.array([25,255,255])
 
                 H_image = cv.inRange(HSV_image,lower_blue,upper_blue)
@@ -472,8 +472,8 @@ class ImageListener(Node):
                 hand_pose._orientation._z = rotation_hand[2]
                 hand_pose._orientation._w = rotation_hand[3]
 
-                hand_pose._position._x = transform_hand[0][3]*-1
-                hand_pose._position._y = transform_hand[1][3]*-1
+                hand_pose._position._x = transform_hand[0][3]
+                hand_pose._position._y = transform_hand[1][3]
                 hand_pose._position._z = transform_hand[2][3]
 
                 # print("x: " ,transform_hand[0][3])
@@ -489,16 +489,19 @@ class ImageListener(Node):
                 #######      see if hand is in one place             ################################
                 #####################################################################################
 
+                self.when_to_start_time +=1    
+                if self.when_to_start_time == 1:
+                    self.hand_start_time = time.time()
 
                 print(self.iteration) 
                 self.old_positions[self.iteration] = [transform_hand[0][3]*-1,transform_hand[1][3]*-1,transform_hand[2][3]]
                 # print(self.old_positions)
                 self.iteration+= 1
 
-                dist1 =np.linalg.norm(self.old_positions[0]-self.old_positions[1])
-                dist2 =np.linalg.norm(self.old_positions[1]-self.old_positions[2])
-                dist3 =np.linalg.norm(self.old_positions[2]-self.old_positions[3])
-                dist4 =np.linalg.norm(self.old_positions[4]-self.old_positions[0])
+                dist1 = np.linalg.norm(self.old_positions[0]-self.old_positions[1])
+                dist2 = np.linalg.norm(self.old_positions[1]-self.old_positions[2])
+                dist3 = np.linalg.norm(self.old_positions[2]-self.old_positions[3])
+                dist4 = np.linalg.norm(self.old_positions[4]-self.old_positions[0])
 
                 dist_ave = (dist1 +dist2 + dist3 + dist4)/4
                 # print(dist_ave)
@@ -507,11 +510,11 @@ class ImageListener(Node):
                     
                 
                 if dist_ave > 0.01:
-                    
                     return
                     
                     # self.pub_pose.publish(hand_pose)
                     # self.searchBool = False
+
 
 
                 #####################################################################################
@@ -525,23 +528,38 @@ class ImageListener(Node):
                         if element >=1:
                             blob_size +=1
                 
-                print("blob size: ", blob_size)
-                print("hand depth: ",hand_coor[2])
+                # print("blob size: ", blob_size)
+                # print("hand depth: ",hand_coor[2])
 
 
 
                 #calibratede konstants for exponential function
-                a = 486734.03262152773
-                b = -9.231364249894371
+                # old_a = 486734.03262152773
+                # old_b = -9.231364249894371
+                a = 337990.8954294294
+                b = -10.985894194395941
 
                 theoretical_blob_size = a * np.exp(b * hand_coor[2])
 
-                blob_differeants = abs(theoretical_blob_size-blob_size)
-                if blob_differeants <=2000:
+                blob_differeants = theoretical_blob_size-blob_size
+
+                procentage_diff = (abs(blob_differeants)/(theoretical_blob_size+blob_size)/2)*100
+                print("procentage diff: ",procentage_diff)
+
+                if procentage_diff <=20:
                     self.pub_pose.publish(hand_pose)
                     self.searchBool = False
+                    hand_end_time = time.time()
+
+                    time_diff = hand_end_time - self.hand_start_time
+                    print("how long to detect hand: ", time_diff)
+                    self.when_to_start_time=0
 
                     
+                if blob_differeants < 0:
+                    print("blob diff: To big")
+                else:
+                    print("blob diff: To small")
 
                 ########### calibration of hans size ############
                 # self.blob_depth.append(hand_coor[2])

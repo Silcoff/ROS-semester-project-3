@@ -370,7 +370,7 @@ class ImageListener(Node):
                 # print(HSV_image[320,240])
                 ########################################################
 
-                lower_blue = np.array([10,90,100])
+                lower_blue = np.array([10,40,100])
                 upper_blue = np.array([25,255,255])
 
                 H_image = cv.inRange(HSV_image,lower_blue,upper_blue)
@@ -535,10 +535,12 @@ class ImageListener(Node):
 
 
                 #calibratede konstants for exponential function
-                # old_a = 486734.03262152773
-                # old_b = -9.231364249894371
-                a = 337990.8954294294
-                b = -10.985894194395941
+                # first_a = 486734.03262152773
+                # fisrt_b = -9.231364249894371
+                # second_a = 337990.8954294294
+                # second_b = -10.985894194395941
+                a = 270630.6961550408
+                b = -7.466334315269839
 
                 theoretical_blob_size = a * np.exp(b * hand_coor[2])
 

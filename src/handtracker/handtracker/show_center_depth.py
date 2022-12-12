@@ -371,7 +371,7 @@ class ImageListener(Node):
                 ########################################################
 
                 lower_blue = np.array([10,40,100])
-                upper_blue = np.array([25,255,255])
+                upper_blue = np.array([30,255,255])
 
                 H_image = cv.inRange(HSV_image,lower_blue,upper_blue)
 
@@ -436,6 +436,7 @@ class ImageListener(Node):
                 # distTrans = cv.distanceTransform(closing, cv.DIST_L2, 3)
                 distTrans = cv.distanceTransform(H_image, cv.DIST_L2, 3)
 
+                distTrans = self.dilatation(10,2,distTrans)
                 # find max values in dialated depth
                 max_Value_Depth = np.amax(distTrans)
 
@@ -452,7 +453,7 @@ class ImageListener(Node):
                 x,y,z = self.convert_depth_frame_to_pointcloud(depth_image,self.camera_intrinsics)
                 xyz = np.dstack((x,y,z))
                 distTrans = cv.normalize(distTrans,distTrans,0,1.0,cv.NORM_MINMAX)
-                distTrans = np.dstack((distTrans,distTrans,distTrans))
+                distTrans_3d = np.dstack((distTrans,distTrans,distTrans))
                 # find hand x,y computed from the max value coordinates
                 hand_coor = xyz[isolate_XY_max_Depth_Loc[1]][isolate_XY_max_Depth_Loc[0]]
                 # print(hand_coor)
@@ -601,7 +602,7 @@ class ImageListener(Node):
                 
 
                 depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
-                images = np.hstack((bg_removed,H_image_3d))
+                images = np.hstack((H_image_3d,distTrans_3d))
 
                 cv.namedWindow('Align Example', cv.WINDOW_NORMAL)
                 cv.imshow('Align Example', images)

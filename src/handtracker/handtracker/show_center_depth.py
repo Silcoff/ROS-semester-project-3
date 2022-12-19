@@ -47,16 +47,10 @@ class ImageListener(Node):
         super().__init__('test_code')
         # we instantiate the cvbridge oject
         self.bridge = CvBridge()
-        
-        self.searchBool = True
-        
-        # we create an subcriber where the first input is the type of msg, second is the topic that we subscribe to, third is the callbackfunction the data will be passed to, the last element i do not know what is.
-        # self.sub_bgr = self.create_subscription(msg_Image, "/camera/color/image_raw", self.colorImageCallback, 1)
-        # self.sub_depth = self.create_subscription(msg_Image, "/camera/depth/image_rect_raw", self.depthImageCallback, 1)
-        self.pub_bgr = self.create_publisher(msg_Image,"/rgb_image",1)
 
-        self.pub_depth = self.create_publisher(msg_Image,"/depth_image",1)
-        
+        self.searchBool = True
+
+
         # we create a publisher, where the first intput is the msg type, seconde is the topic name, last is unkown
         self.pub_pose = self.create_publisher(Pose, 'hand_pose_msg', 1)
         self.create_subscription(Bool, 'searchBool',self.change_Bool_callback,1)
@@ -247,12 +241,12 @@ class ImageListener(Node):
         xs = x.flatten()[::40]
         ys = y.flatten()[::40]
         zs = z.flatten()[::40]
-        
+
         xs = [i for i in xs if i != 0]
         ys = [i for i in ys if i != 0]
         zs = [i for i in zs if i != 0]
         if len(xs)<3:
-            return        
+            return
         # print(xs,ys,zs)
 
         # for i in range(N_POINTS):
@@ -309,7 +303,7 @@ class ImageListener(Node):
         # plt.show()
         return fit
 
-    
+
 
     def dot_product(self,x, y):
         return sum([x[i] * y[i] for i in range(len(x))])
@@ -361,16 +355,13 @@ class ImageListener(Node):
                 depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) #depth image is 1 channel, color is 3 channels
                 bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 200), grey_color, color_image)
 
-                depth_bg_removed = np.where((depth_image > self.clipping_distance) | (depth_image <= 200), grey_color, depth_image)
-
-                depth_bg_removed = depth_bg_removed.astype(np.uint8)
                 HSV_image = cv.cvtColor(bg_removed,cv.COLOR_RGB2HSV)
 
                 #### USED TO CALIBRATE THE HSV FOR THE BLUE GLOVE ######
                 # print(HSV_image[320,240])
                 ########################################################
 
-                lower_blue = np.array([10,40,100])
+                lower_blue = np.array([10,40,70])
                 upper_blue = np.array([30,255,255])
 
                 H_image = cv.inRange(HSV_image,lower_blue,upper_blue)
@@ -380,13 +371,9 @@ class ImageListener(Node):
 
                 H_image_depth = np.where(H_image !=0 ,  depth_image,grey_color)
                 x,y,z = self.convert_depth_frame_to_pointcloud(H_image_depth,self.camera_intrinsics)
-                # XYZ_H_image_depth = np.dstack(x,y,z)
 
                 Z_axis_vector = self.pythoMath(x,y,z)
-                # normal = self.plane_from_points(XYZ_H_image_depth)
-                # if (normal == None).all() :
-                #     return
-                # print(normal)    
+
                 bg_removed_grayscale = cv.cvtColor(bg_removed,cv.COLOR_RGB2GRAY)
                 ret, binary_bg_removed = cv.threshold(bg_removed_grayscale,0,255,cv.THRESH_BINARY)
 
@@ -399,7 +386,7 @@ class ImageListener(Node):
 
                 if len(X)<3:
                     return
-                
+
                 a,b = np.polyfit(X,Y,1)
                 # plt.scatter(X,Y)
                 # plt.plot(X,a*X+b)
@@ -419,7 +406,7 @@ class ImageListener(Node):
                 dotXZ= np.dot(X_axis_vector,Z_axis_vector)
                 dotYX= np.dot(Y_axis_vector,X_axis_vector)
 
-                
+
                 # print("check orthoganallity YX: " , dotYZ)
                 # print("check orthoganallity XZ: " , dotXZ)
                 # print("check orthoganallity YX: " , dotYX)
@@ -434,16 +421,20 @@ class ImageListener(Node):
                 binary_bg_removed = np.dstack((binary_bg_removed,binary_bg_removed,binary_bg_removed))
 
                 # distTrans = cv.distanceTransform(closing, cv.DIST_L2, 3)
-                distTrans = cv.distanceTransform(H_image, cv.DIST_L2, 3)
+                distTrans = self.dilatation(10,2,H_image)
+                # cv.namedWindow('dialation only for distance transform', cv.WINDOW_NORMAL)
+                # cv.imshow('dialation only for distance transform', distTrans)
 
-                distTrans = self.dilatation(10,2,distTrans)
+                distTrans = cv.distanceTransform(distTrans, cv.DIST_L2, 3)
+
                 # find max values in dialated depth
                 max_Value_Depth = np.amax(distTrans)
 
                 # compute all places where max value in dialeted depth is
                 XY_max_Depth_Loc = np.where(distTrans==max_Value_Depth)
                 # print(XY_max_Depth_Loc)
-                # get fisrt max value coordinate from dialated depth
+
+                # get first max value coordinate from dialated depth
                 isolate_XY_max_Depth_Loc = [XY_max_Depth_Loc[1][0],XY_max_Depth_Loc[0][0]]
 
                 # create circle around max value in dialated depth
@@ -454,6 +445,7 @@ class ImageListener(Node):
                 xyz = np.dstack((x,y,z))
                 distTrans = cv.normalize(distTrans,distTrans,0,1.0,cv.NORM_MINMAX)
                 distTrans_3d = np.dstack((distTrans,distTrans,distTrans))
+
                 # find hand x,y computed from the max value coordinates
                 hand_coor = xyz[isolate_XY_max_Depth_Loc[1]][isolate_XY_max_Depth_Loc[0]]
                 # print(hand_coor)
@@ -462,11 +454,11 @@ class ImageListener(Node):
                                    [self.X_axis_normalized[1,0],self.Y_axis_normalized[1,0],self.Z_axis_normalized[1,0],hand_coor[1]],
                                    [self.X_axis_normalized[2,0],self.Y_axis_normalized[2,0],self.Z_axis_normalized[2,0],hand_coor[2]],
                                    [0                          ,0                          ,0                          ,1           ]]
-                
+
                 # print("matrix rotiation: " ,rotation_hand)
                 rotation_hand = tf.quaternion_from_matrix(transform_hand)
                 # print("quaternion: " ,rotation_hand)
-                
+
                 hand_pose = Pose()
 
                 hand_pose._orientation._x = rotation_hand[0]
@@ -484,18 +476,18 @@ class ImageListener(Node):
 
 
 
-               
+
 
 
                 #####################################################################################
                 #######      see if hand is in one place             ################################
                 #####################################################################################
 
-                self.when_to_start_time +=1    
+                self.when_to_start_time +=1
                 if self.when_to_start_time == 1:
                     self.hand_start_time = time.time()
 
-                print(self.iteration) 
+                print(self.iteration)
                 self.old_positions[self.iteration] = [transform_hand[0][3]*-1,transform_hand[1][3]*-1,transform_hand[2][3]]
                 # print(self.old_positions)
                 self.iteration+= 1
@@ -509,13 +501,13 @@ class ImageListener(Node):
                 # print(dist_ave)
                 if self.iteration >= self.old_positions.shape[0]:
                     self.iteration=0
-                    
-                
+
+
                 if dist_ave > 0.05:
                     return
-                    
-                    # self.pub_pose.publish(hand_pose)
-                    # self.searchBool = False
+
+                    self.pub_pose.publish(hand_pose)
+                    self.searchBool = False
 
 
 
@@ -529,7 +521,7 @@ class ImageListener(Node):
                     for element in row:
                         if element >=1:
                             blob_size +=1
-                
+
                 # print("blob size: ", blob_size)
                 # print("hand depth: ",hand_coor[2])
 
@@ -559,7 +551,7 @@ class ImageListener(Node):
                     print("how long to detect hand: ", time_diff)
                     self.when_to_start_time=0
 
-                    
+
                 if blob_differeants < 0:
                     print("blob diff: To big")
                 else:
@@ -588,25 +580,49 @@ class ImageListener(Node):
                 #####################################################################################
                 #######      showing images                          ################################
                 #####################################################################################
-                
-                # print(transform_hand)    
+
+                # print(transform_hand)
                 skel_3d = np.dstack((skel,skel,skel))
                 # binary_depth_image_3d = np.dstack((binary_depth_image,binary_depth_image,binary_depth_image))
                 closing_3d = np.dstack((closing,closing,closing))
-                
+
                 H_image_depth_3d = np.dstack((H_image_depth,H_image_depth,H_image_depth))
                 H_image_depth_3d = H_image_depth_3d.astype(np.uint8)
                 # Render images:
                 #   depth align to color on left
                 #   depth on right
-                
+
 
                 depth_colormap = cv.applyColorMap(cv.convertScaleAbs(depth_image, alpha=0.03), cv.COLORMAP_JET)
                 images = np.hstack((H_image_3d,distTrans_3d))
 
-                cv.namedWindow('Align Example', cv.WINDOW_NORMAL)
-                cv.imshow('Align Example', images)
-                # cv.imshow('asdf',depth_image)
+                # cv.namedWindow('Align Example', cv.WINDOW_NORMAL)
+                # cv.imshow('Align Example', images)
+
+                # cv.namedWindow('depth_colormap', cv.WINDOW_NORMAL)
+                # cv.imshow('depth_colormap', depth_colormap)
+
+                # cv.namedWindow('RGB', cv.WINDOW_NORMAL)
+                # cv.imshow('RGB', color_image)
+                
+                # cv.namedWindow('binary_bg_removed', cv.WINDOW_NORMAL)
+                # cv.imshow('binary_bg_removed', binary_bg_removed)
+                
+                # cv.namedWindow('bg_removed', cv.WINDOW_NORMAL)
+                # cv.imshow('bg_removed', bg_removed)
+                
+                # cv.namedWindow('skeleton', cv.WINDOW_NORMAL)
+                # cv.imshow('skeleton', skel)
+                
+                # cv.namedWindow('big dialated and eroded', cv.WINDOW_NORMAL)
+                # cv.imshow('big dialated and eroded', closing)
+                
+                # cv.namedWindow('hue', cv.WINDOW_NORMAL)
+                # cv.imshow('hue', H_image_3d)
+                
+                # cv.namedWindow('distance transform', cv.WINDOW_NORMAL)
+                # cv.imshow('distance transform', distTrans)
+
                 key = cv.waitKey(1)
                 # Press esc or 'q' to close the image window
                 if key & 0xFF == ord('q') or key == 27:

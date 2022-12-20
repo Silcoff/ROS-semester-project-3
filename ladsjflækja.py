@@ -37,6 +37,8 @@ tmp_b = []
 for i in range(len(xs)):
     tmp_A.append([xs[i], ys[i], 1])
     tmp_b.append(zs[i])
+    print("temp_A: ", tmp_A)
+    print("temp_b: ", tmp_b)
 b = np.matrix(tmp_b).T
 A = np.matrix(tmp_A)
 
@@ -49,9 +51,9 @@ residual = np.linalg.norm(errors)
 # from scipy.linalg import lstsq
 # fit, residual, rnk, s = lstsq(A, b)
 
-print("solution: %f x + %f y + %f = z" % (fit[0], fit[1], fit[2]))
-print("errors: \n", errors)
-print("residual:", residual)
+# print("solution: %f x + %f y + %f = z" % (fit[0], fit[1], fit[2]))
+# print("errors: \n", errors)
+# print("residual:", residual)
 
 # plot plane
 xlim = ax.get_xlim()

@@ -1,5 +1,5 @@
 # cmake_minimum_required(VERSION 3.5)
-# project(hello_ur_mover)
+# project(ur_mover)
 
 # # Default to C99
 # if(NOT CMAKE_C_STANDARD)
@@ -43,7 +43,7 @@
 # ament_package()
 
 cmake_minimum_required(VERSION 3.8)
-project(hello_ur_mover)
+project(ur_mover)
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   add_compile_options(-Wall -Wextra -Wpedantic)
@@ -56,18 +56,18 @@ find_package(rclcpp REQUIRED)
 
 
 
-add_executable(hello_ur_mover src/hello_ur_mover.cpp)
-target_include_directories(hello_ur_mover PUBLIC
+add_executable(ur_mover src/ur_mover.cpp)
+target_include_directories(ur_mover PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
   $<INSTALL_INTERFACE:include>)
-target_compile_features(hello_ur_mover PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
+target_compile_features(ur_mover PUBLIC c_std_99 cxx_std_17)  # Require C99 and C++17
 ament_target_dependencies(
-  hello_ur_mover
+  ur_mover
   "moveit_ros_planning_interface"
   "rclcpp"
 )
 
-install(TARGETS hello_ur_mover
+install(TARGETS ur_mover
   DESTINATION lib/${PROJECT_NAME})
 
 # Install launch files.

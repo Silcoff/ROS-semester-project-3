@@ -12,7 +12,7 @@ class MinimalSubscriber : public rclcpp::Node
 {
   public:
     MinimalSubscriber()
-    : Node("hello_ur_mover")
+    : Node("ur_mover")
     {
       subscription_ = this->create_subscription<geometry_msgs::msg::Pose>("pose_msg", 1, std::bind(&MinimalSubscriber::topic_callback, this, _1));
       publisher_ = this->create_publisher<std_msgs::msg::Bool>("searchBool", 1);
@@ -25,7 +25,7 @@ class MinimalSubscriber : public rclcpp::Node
     {
 
       auto const node = std::make_shared<rclcpp::Node>(
-          "hello_ur_mover",
+          "ur_mover",
           rclcpp::NodeOptions().automatically_declare_parameters_from_overrides(true)
         );
 
@@ -34,13 +34,13 @@ class MinimalSubscriber : public rclcpp::Node
       auto timer = std_msgs::msg::Bool();
 
       // Create a ROS logger
-      auto const logger = rclcpp::get_logger("hello_ur_mover");
+      auto const logger = rclcpp::get_logger("ur_mover");
 
       // Create the MoveIt MoveGroup Interface
       using moveit::planning_interface::MoveGroupInterface;
       auto move_group_interface = MoveGroupInterface(node, "ur_manipulator"); //change
       
-      // move_group_interface.setPoseReferenceFrame("base");
+      move_group_interface.setPoseReferenceFrame("base");
 
 
       const float quan_w = msg->orientation.w;
@@ -235,7 +235,34 @@ class MinimalSubscriber : public rclcpp::Node
       if (fraction >0.75){
       move_group_interface.execute(trajectory);
 
-      std::cout << "frame name: " <<move_group_interface.getPoseReferenceFrame() << std::endl;
+      // std::cout << "frame name: " <<move_group_interface.getPoseReferenceFrame() << std::endl;
+
+      // RCLCPP_INFO(logger, "End effector link: %s", move_group_interface.getEndEffectorLink().c_str());
+      // RCLCPP_INFO(logger, "Available Planning Groups:");
+      // std::copy(move_group_interface.getJointModelGroupNames().begin(), move_group_interface.getJointModelGroupNames().end(),
+      // std::ostream_iterator<std::string>(std::cout, ", "));
+
+      // geometry_msgs::msg::PoseStamped endeffector_pose = move_group_interface.getCurrentPose();
+      // const float quan_w = endeffector_pose.pose.orientation.w;
+      // const float quan_x = endeffector_pose.pose.orientation.x;
+      // const float quan_y = endeffector_pose.pose.orientation.y;
+      // const float quan_z = endeffector_pose.pose.orientation.z;
+      // const float post_z = endeffector_pose.pose.position.z;
+      // const float post_y = endeffector_pose.pose.position.y;
+      // const float post_x = endeffector_pose.pose.position.x;
+
+      // std::cout <<"post x: " << post_x << std::endl;
+      // std::cout <<"post y: " << post_y << std::endl;
+      // std::cout <<"post z: " << post_z << std::endl;
+
+      // std::cout <<"quan w: " << quan_w << std::endl;
+      // std::cout <<"quan x: " << quan_x << std::endl;
+      // std::cout <<"quan y: " << quan_y << std::endl;
+      // std::cout <<"quan z: " << quan_z << std::endl;
+
+
+
+      // std::cout << move_group_interface.getCurrentPose() << std::endl;
 
       timer.data = false;
       pub_timer_->publish(timer);
@@ -248,16 +275,18 @@ class MinimalSubscriber : public rclcpp::Node
       
       
       //-----------------
-      sleep(2);
+      sleep(5);
 
       std::vector<geometry_msgs::msg::Pose> waypoints2;
 
       geometry_msgs::msg::Pose target_pose2;
 
+      target_pose2.orientation.x = -0.3826834;
+      target_pose2.orientation.y = 0.9238795;
+      target_pose2.orientation.z = 0;
       target_pose2.orientation.w = 0;
-      target_pose2.orientation.x = -1;
-      target_pose2.position.x = 0.5;
-      target_pose2.position.y = 0.5;
+      target_pose2.position.x = -0.5;
+      target_pose2.position.y = -0.5;
       target_pose2.position.z = 0.65;
       waypoints2.push_back(target_pose2); 
 
@@ -268,12 +297,16 @@ class MinimalSubscriber : public rclcpp::Node
       // Warning - disabling the jump threshold while operating real hardware can cause
       // large unpredictable motions of redundant joints and could be a safety issue
       moveit_msgs::msg::RobotTrajectory trajectory2;
+      fraction = 0;
 
-
+      while (fraction <0.99)
+      {
       fraction = move_group_interface.computeCartesianPath(waypoints2, eef_step, jump_threshold, trajectory2);
       RCLCPP_INFO(logger, "Visualizing plan 2 (Cartesian path) (%.2f%% achieved)", fraction * 100.0);
 
       move_group_interface.execute(trajectory2); 
+      };
+      
       //------------
 
       sleep(2);

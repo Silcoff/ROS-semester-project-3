@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'handtracker'
+package_name = 'pose_sender'
 
 setup(
     name=package_name,
@@ -20,9 +20,7 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'test_code = handtracker.show_center_depth:main',
-            'hand_pose = handtracker.hand_pose:main',
-            'hand_tracker = handtracker.show_center_depth:main',
+            'pose_sender = pose_sender.pose_sender:main',
         ],
     },
 )

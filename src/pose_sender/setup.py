@@ -1,6 +1,6 @@
 from setuptools import setup
 
-package_name = 'ur_mover'
+package_name = 'pose_sender'
 
 setup(
     name=package_name,

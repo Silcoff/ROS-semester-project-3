@@ -3,38 +3,37 @@ import rclpy # Python Client Library for ROS 2
 from rclpy.node import Node # Handles the creation of nodes
 from geometry_msgs.msg import Pose
 import numpy as np
-
 from geometry_msgs.msg import TransformStamped
 from geometry_msgs.msg import Pose
-
 import tf_transformations as tf
 from std_msgs.msg import Bool
-
 from tf2_ros import TransformBroadcaster
 import traceback
-
 import time
+
 
 class poseSender(Node):
     # this funciton will run when the class is called upon
     def __init__(self):
+        # initialize the node and give it a name (pose_sender).
         super().__init__('pose_sender')
+
+        # create a tf broadcaster that will publish a TransformStamped message.
         self.tf_broadcaster = TransformBroadcaster(self)
 
-        self.sub = self.create_subscription(Pose,"hand_pose_msg",self.poseCallback,1)
-        self.sub_timer = self.create_subscription(Bool,"timer",self.timerstop,1)
 
-        self.timerstop = True
-        self.pub = self.create_publisher(Pose, 'pose_msg', 1)
-        # self.poseCallback()
-        # timer_period = 0.5  # seconds
-        # self.timer = self.create_timer(timer_period, self.poseCallback)
+        self.sub = self.create_subscription(Pose,"hand_pose_msg",self.poseCallback,1) # create a subscriber that will subscribe to a Pose message on the topic hand_pose_msg
+        self.sub_timer = self.create_subscription(Bool,"timer",self.timerstop,1) # create a subscriber that will subscribe to a Bool message on the topic timer
+
+        self.pub = self.create_publisher(Pose, 'pose_msg', 1) # create a publisher that will publish a Pose message on the topic pose_msg
+
 
     def timerstop(self,msg):
         try:
             print(msg.data)
             end_time = time.time()
 
+            # calculate the time it took to move the robot
             timer =end_time-self.start_time        
 
             print("time to move: ", timer)
@@ -43,72 +42,7 @@ class poseSender(Node):
             return
 
 
-    def rotation_matrix(self,theta1, theta2, theta3, order='xyz'):
-        """
-        input
-            theta1, theta2, theta3 = rotation angles in rotation order (degrees)
-            oreder = rotation order of x,y,z　e.g. XZY rotation -- 'xzy'
-        output
-            3x3 rotation matrix (numpy array)
-        """
-        c1 = np.cos(theta1 * np.pi / 180)
-        s1 = np.sin(theta1 * np.pi / 180)
-        c2 = np.cos(theta2 * np.pi / 180)
-        s2 = np.sin(theta2 * np.pi / 180)
-        c3 = np.cos(theta3 * np.pi / 180)
-        s3 = np.sin(theta3 * np.pi / 180)
-
-        if order == 'xzx':
-            matrix=np.array([[c2, -c3*s2, s2*s3],
-                            [c1*s2, c1*c2*c3-s1*s3, -c3*s1-c1*c2*s3],
-                            [s1*s2, c1*s3+c2*c3*s1, c1*c3-c2*s1*s3]])
-        elif order=='xyx':
-            matrix=np.array([[c2, s2*s3, c3*s2],
-                            [s1*s2, c1*c3-c2*s1*s3, -c1*s3-c2*c3*s1],
-                            [-c1*s2, c3*s1+c1*c2*s3, c1*c2*c3-s1*s3]])
-        elif order=='yxy':
-            matrix=np.array([[c1*c3-c2*s1*s3, s1*s2, c1*s3+c2*c3*s1],
-                            [s2*s3, c2, -c3*s2],
-                            [-c3*s1-c1*c2*s3, c1*s2, c1*c2*c3-s1*s3]])
-        elif order=='yzy':
-            matrix=np.array([[c1*c2*c3-s1*s3, -c1*s2, c3*s1+c1*c2*s3],
-                            [c3*s2, c2, s2*s3],
-                            [-c1*s3-c2*c3*s1, s1*s2, c1*c3-c2*s1*s3]])
-        elif order=='zyz':
-            matrix=np.array([[c1*c2*c3-s1*s3, -c3*s1-c1*c2*s3, c1*s2],
-                            [c1*s3+c2*c3*s1, c1*c3-c2*s1*s3, s1*s2],
-                            [-c3*s2, s2*s3, c2]])
-        elif order=='zxz':
-            matrix=np.array([[c1*c3-c2*s1*s3, -c1*s3-c2*c3*s1, s1*s2],
-                            [c3*s1+c1*c2*s3, c1*c2*c3-s1*s3, -c1*s2],
-                            [s2*s3, c3*s2, c2]])
-        elif order=='xyz':
-            matrix=np.array([[c2*c3, -c2*s3, s2],
-                            [c1*s3+c3*s1*s2, c1*c3-s1*s2*s3, -c2*s1],
-                            [s1*s3-c1*c3*s2, c3*s1+c1*s2*s3, c1*c2]])
-        elif order=='xzy':
-            matrix=np.array([[c2*c3, -s2, c2*s3],
-                            [s1*s3+c1*c3*s2, c1*c2, c1*s2*s3-c3*s1],
-                            [c3*s1*s2-c1*s3, c2*s1, c1*c3+s1*s2*s3]])
-        elif order=='yxz':
-            matrix=np.array([[c1*c3+s1*s2*s3, c3*s1*s2-c1*s3, c2*s1],
-                            [c2*s3, c2*c3, -s2],
-                            [c1*s2*s3-c3*s1, c1*c3*s2+s1*s3, c1*c2]])
-        elif order=='yzx':
-            matrix=np.array([[c1*c2, s1*s3-c1*c3*s2, c3*s1+c1*s2*s3],
-                            [s2, c2*c3, -c2*s3],
-                            [-c2*s1, c1*s3+c3*s1*s2, c1*c3-s1*s2*s3]])
-        elif order=='zyx':
-            matrix=np.array([[c1*c2, c1*s2*s3-c3*s1, s1*s3+c1*c3*s2],
-                            [c2*s1, c1*c3+s1*s2*s3, c3*s1*s2-c1*s3],
-                            [-s2, c2*s3, c2*c3]])
-        elif order=='zxy':
-            matrix=np.array([[c1*c3-s1*s2*s3, -c2*s1, c1*s3+c3*s1*s2],
-                            [c3*s1+c1*s2*s3, c1*c2, s1*s3-c1*c3*s2],
-                            [-c2*s3, s2, c2*c3]])
-
-        return matrix
-
+    
     def quaternion_rotation_matrix(self,Q):
         """
         Covert a quaternion into a full three-dimensional rotation matrix.
@@ -150,16 +84,6 @@ class poseSender(Node):
         return rot_matrix
 
     def poseCallback(self,data):
-        # self.x= float(data.x)/1000
-        # self.y= float(data.y)/1000
-        # self.z= float(data.z)/1000
-        # print(data.x)
-        # print(data.y)
-        # print(data.z)
-
-
-            
-
 
         in_quan_x = data.orientation.x
         in_quan_y = data.orientation.y
@@ -175,54 +99,8 @@ class poseSender(Node):
         in_rot_matrix = self.quaternion_rotation_matrix(in_quan)
         
 
-
-
-
-        # self.x = float(input("x: "))
-        # self.y = float(input("y: "))
-        # self.z = float(input("z: "))
-
-
-
-        # frame31=self.frame3_to_frame1(self.x,self.y,self.z)
-
-
-        frame12 = np.array([    [0.7071068, -0.7071068,  0.0000000, 0.0000000], 
-                                [0.7071068,  0.7071068,  0.0000000, 0.0000000],
-                                [0.0000000,  0.0000000,  1.0000000, 0.0000000],
-                                [0.0000000,  0.0000000,  0.0000000, 1.0000000]])
-
-        ####### send tf frame 12
-        tf_frame12 = TransformStamped()
-
-        tf_frame12.header.stamp = self.get_clock().now().to_msg()
-        tf_frame12.header.frame_id = 'world'
-        tf_frame12.child_frame_id = 'frame12'
-        tf_frame12.transform.translation.x = frame12[0][3]
-        tf_frame12.transform.translation.y = frame12[1][3]
-        tf_frame12.transform.translation.z = frame12[2][3]
-
-        tf_quan12 = tf.quaternion_from_matrix(frame12)
-
-
-        tf_frame12.transform.rotation.x = tf_quan12[0]
-        tf_frame12.transform.rotation.y = tf_quan12[1]
-        tf_frame12.transform.rotation.z = tf_quan12[2]
-        tf_frame12.transform.rotation.w = tf_quan12[3]
-
-        self.tf_broadcaster.sendTransform(tf_frame12)
-        ################ tf send for frame 12 ######
-
-
-        frame23 = np.array([    [1.0,  0.0,  0.0,  0.7], 
-                                [0.0,  1.0,  0.0,  0.0],
-                                [0.0,  0.0,  1.0,  -0.065],
-                                [0.0,  0.0,  0.0,  1.0]])
-
         
 
-        ####################################
-        ####################################
         ####################################
 
 
@@ -235,152 +113,124 @@ class poseSender(Node):
         cam_RZ = -2.340
 
 
-        world_base = [[1 , 0  , 0 , 0],
-                      [0  , 1 , 0 , 0],
-                      [0  , 0  , 1 , 0],
-                      [0  , 0  , 0 , 1]]
 
 
-        base_table = [[-0.9960878, -0.0883687,  0.0000000   , 0],
-                       [ 0.0883687, -0.9960878,  0.0000000  , 0],
-                        [0.0000000,  0.0000000,  1.0000000  , 0], 
-                        [0.0000000,  0.0000000,  0.0000000  , 1] ]
 
 
-        rot=self.rotation_matrix(cam_RX,cam_RY,cam_RZ,'xyz')
-
-        # print(rot)
 
 
-        # base_flange = [[rot[0][0] , rot[0][1]  , rot[0][2] , cam_x/1000],
-        #                [rot[1][0] , rot[1][1]  , rot[1][2] , cam_y/1000],
-        #                [rot[2][0] , rot[2][1]  , rot[2][2] , cam_z/1000],
-        #                [0         , 0          , 0         , 1     ]]
 
-
-        base_flange = [[np.cos(45*np.pi /180), -np.sin(45*np.pi /180),  0.000000 , cam_x/1000],
+        frame_base_camera = [[np.cos(45*np.pi /180), -np.sin(45*np.pi /180),  0.000000 , cam_x/1000],
                        [np.sin(45*np.pi /180),  np.cos(45*np.pi /180),  0.000000 , cam_y/1000],
-                       [0       , 0          , 1         , cam_z/1000],
-                       [0         , 0          , 0         , 1     ]]
-
-
-        # world_flange = np.dot(world_base,base_flange)
-
-        # print(world_flange)
+                       [0                    , 0                     , 1         , cam_z/1000],
+                       [0                    , 0                     , 0         , 1     ]]
 
 
 
-        ####################################
-        ####################################
-        ####################################
-        frame13 = base_flange
         
-        # frame13 = np.dot(frame12,frame23)
-
-        print(frame13)
 
 
 
 
-        ####### send tf frame 23
-        tf_frame13 = TransformStamped()
+        ####### send tf frame_base_camera   #########################################
+        tf_frame_base_camera = TransformStamped()
 
-        tf_frame13.header.stamp = self.get_clock().now().to_msg()
-        tf_frame13.header.frame_id = 'base'
-        tf_frame13.child_frame_id = 'frame13'
-        tf_frame13.transform.translation.x = frame13[0][3]
-        tf_frame13.transform.translation.y = frame13[1][3]
-        tf_frame13.transform.translation.z = frame13[2][3]
+        tf_frame_base_camera.header.stamp = self.get_clock().now().to_msg()
+        tf_frame_base_camera.header.frame_id = 'base'
+        tf_frame_base_camera.child_frame_id = 'frame_base_camera'
+        tf_frame_base_camera.transform.translation.x = frame_base_camera[0][3]
+        tf_frame_base_camera.transform.translation.y = frame_base_camera[1][3]
+        tf_frame_base_camera.transform.translation.z = frame_base_camera[2][3]
 
-        tf_quan13 = tf.quaternion_from_matrix(frame13)
-
-
-        tf_frame13.transform.rotation.x = tf_quan13[0]
-        tf_frame13.transform.rotation.y = tf_quan13[1]
-        tf_frame13.transform.rotation.z = tf_quan13[2]
-        tf_frame13.transform.rotation.w = tf_quan13[3]
-
-        self.tf_broadcaster.sendTransform(tf_frame13)
-        ################ tf send for frame 23 ######
+        tf_quan_base_camera = tf.quaternion_from_matrix(frame_base_camera)
 
 
+        tf_frame_base_camera.transform.rotation.x = tf_quan_base_camera[0]
+        tf_frame_base_camera.transform.rotation.y = tf_quan_base_camera[1]
+        tf_frame_base_camera.transform.rotation.z = tf_quan_base_camera[2]
+        tf_frame_base_camera.transform.rotation.w = tf_quan_base_camera[3]
 
-        frame34 =  [[in_rot_matrix[0][0], in_rot_matrix[0][1], in_rot_matrix[0][2], in_post_x],
-                    [in_rot_matrix[1][0], in_rot_matrix[1][1], in_rot_matrix[1][2], in_post_y],
-                    [in_rot_matrix[2][0], in_rot_matrix[2][1], in_rot_matrix[2][2], in_post_z],
-                    [0                  , 0                  , 0                  , 1        ]]
+        self.tf_broadcaster.sendTransform(tf_frame_base_camera)
+        ################ tf send for frame_base_camera #############################
 
 
-        dgree90 = [[-1, 0,  0.0000000 , 0],
-                    [0  , -1  ,  0.0000000 , 0],
-                    [0  , 0  , 1 , 0],
-                    [0  , 0  , 0 , 1]]
 
-        frame34 = np.dot(dgree90,frame34)
 
-        frame14 = np.dot(frame13,frame34)
+        frame_camera_hand =  [[in_rot_matrix[0][0], in_rot_matrix[0][1], in_rot_matrix[0][2], in_post_x],
+                              [in_rot_matrix[1][0], in_rot_matrix[1][1], in_rot_matrix[1][2], in_post_y],
+                              [in_rot_matrix[2][0], in_rot_matrix[2][1], in_rot_matrix[2][2], in_post_z],
+                              [0                  , 0                  , 0                  , 1        ]]
+
+
+        dgree90 = [[-1 , 0   , 0 , 0],
+                   [0  , -1  , 0 , 0],
+                   [0  , 0   , 1 , 0],
+                   [0  , 0   , 0 , 1]]
+
+        frame_camera_hand = np.dot(dgree90,frame_camera_hand)
+
+        frame_base_camera = np.dot(frame_base_camera,frame_camera_hand)
         
         
-        ####### send tf frame 34
-        tf_frame14 = TransformStamped()
+        ####### send tf frame_base_camera   #########################################
+        tf_frame_base_camera = TransformStamped()
 
-        tf_frame14.header.stamp = self.get_clock().now().to_msg()
-        tf_frame14.header.frame_id = 'base'
-        tf_frame14.child_frame_id = 'frame14'
-        tf_frame14.transform.translation.x = frame14[0][3]
-        tf_frame14.transform.translation.y = frame14[1][3]
-        tf_frame14.transform.translation.z = frame14[2][3]
+        tf_frame_base_camera.header.stamp = self.get_clock().now().to_msg()
+        tf_frame_base_camera.header.frame_id = 'base'
+        tf_frame_base_camera.child_frame_id = 'frame_base_hand'
+        tf_frame_base_camera.transform.translation.x = frame_base_camera[0][3]
+        tf_frame_base_camera.transform.translation.y = frame_base_camera[1][3]
+        tf_frame_base_camera.transform.translation.z = frame_base_camera[2][3]
 
-        tf_quan14 = tf.quaternion_from_matrix(frame14)
-
-
-        tf_frame14.transform.rotation.x = tf_quan14[0]
-        tf_frame14.transform.rotation.y = tf_quan14[1]
-        tf_frame14.transform.rotation.z = tf_quan14[2]
-        tf_frame14.transform.rotation.w = tf_quan14[3]
-
-        self.tf_broadcaster.sendTransform(tf_frame14)
-        ################ tf send for frame 34 ######
+        tf_quan_base_camera = tf.quaternion_from_matrix(frame_base_camera)
 
 
+        tf_frame_base_camera.transform.rotation.x = tf_quan_base_camera[0]
+        tf_frame_base_camera.transform.rotation.y = tf_quan_base_camera[1]
+        tf_frame_base_camera.transform.rotation.z = tf_quan_base_camera[2]
+        tf_frame_base_camera.transform.rotation.w = tf_quan_base_camera[3]
+
+        self.tf_broadcaster.sendTransform(tf_frame_base_camera)
+        ################ tf send for frame_base_camera #############################
 
 
 
-        frame45  = np.array([   [-1.0,   0.0,   0.0,  0.0], 
-                                [ 0.0,  -1.0,   0.0,  0.0],
-                                [ 0.0,   0.0,  -1.0,  0.1],
-                                [ 0.0,   0.0,   0.0,  1.0]])
 
-        frame15 = np.dot(frame14, frame45)
+        frame_hand_transfer  = np.array([[-1.0,   0.0,   0.0,  0.0], 
+                                         [ 0.0,  -1.0,   0.0,  0.0],
+                                         [ 0.0,   0.0,  -1.0,  0.1],
+                                         [ 0.0,   0.0,   0.0,  1.0]])
 
-
-        ####### send tf frame 45
-        tf_frame15 = TransformStamped()
-
-        tf_frame15.header.stamp = self.get_clock().now().to_msg()
-        tf_frame15.header.frame_id = 'base'
-        tf_frame15.child_frame_id = 'frame15'
-        tf_frame15.transform.translation.x = frame15[0][3]
-        tf_frame15.transform.translation.y = frame15[1][3]
-        tf_frame15.transform.translation.z = frame15[2][3]
-
-        tf_quan15 = tf.quaternion_from_matrix(frame15)
+        frame_base_transfer = np.dot(frame_base_camera, frame_hand_transfer)
 
 
-        tf_frame15.transform.rotation.x = tf_quan15[0]
-        tf_frame15.transform.rotation.y = tf_quan15[1]
-        tf_frame15.transform.rotation.z = tf_quan15[2]
-        tf_frame15.transform.rotation.w = tf_quan15[3]
+        ####### send tf frame_base_transfer   #########################################
+        tf_frame_base_transfer = TransformStamped()
 
-        self.tf_broadcaster.sendTransform(tf_frame15)
-        ################ tf send for frame 45 ######
+        tf_frame_base_transfer.header.stamp = self.get_clock().now().to_msg()
+        tf_frame_base_transfer.header.frame_id = 'base'
+        tf_frame_base_transfer.child_frame_id = 'frame_base_transfer'
+        tf_frame_base_transfer.transform.translation.x = frame_base_transfer[0][3]
+        tf_frame_base_transfer.transform.translation.y = frame_base_transfer[1][3]
+        tf_frame_base_transfer.transform.translation.z = frame_base_transfer[2][3]
 
+        tf_quan_base_transfer = tf.quaternion_from_matrix(frame_base_transfer)
+
+
+        tf_frame_base_transfer.transform.rotation.x = tf_quan_base_transfer[0]
+        tf_frame_base_transfer.transform.rotation.y = tf_quan_base_transfer[1]
+        tf_frame_base_transfer.transform.rotation.z = tf_quan_base_transfer[2]
+        tf_frame_base_transfer.transform.rotation.w = tf_quan_base_transfer[3]
+
+        self.tf_broadcaster.sendTransform(tf_frame_base_transfer)
+        ################ tf send for frame_base_transfer #############################
 
 
 
 
 
-        out_quan = tf.quaternion_from_matrix(frame15)
+         
+        out_quan = tf.quaternion_from_matrix(frame_base_transfer)
 
 
 
@@ -391,22 +241,13 @@ class poseSender(Node):
         hand_pose.orientation.z = out_quan[2]
         hand_pose.orientation.w = out_quan[3]
 
-
-        # print(float(frame15[0][3]))
-        # print(float(frame15[1][3]))
-        # print(float(frame15[2][3]))
-        hand_pose.position.x = float(frame15[0][3])
-        hand_pose.position.y = float(frame15[1][3])
-        hand_pose.position.z = float(frame15[2][3])
-
-
-
+        hand_pose.position.x = float(frame_base_transfer[0][3])
+        hand_pose.position.y = float(frame_base_transfer[1][3])
+        hand_pose.position.z = float(frame_base_transfer[2][3])
 
 
         self.pub.publish(hand_pose)
         self.start_time = time.time()
-
-
 
 
 

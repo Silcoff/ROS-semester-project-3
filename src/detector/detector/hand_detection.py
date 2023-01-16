@@ -23,9 +23,7 @@ import tf_transformations as tf
 class ImageListener(Node):
     # this funciton will run when the class is called upon
     def __init__(self):
-        super().__init__('test_code')
-        # we instantiate the cvbridge oject
-        self.bridge = CvBridge()
+        super().__init__('Hand_detection')
 
         # the searchBool is a bool that is used to tell the handtracker if it should search for the hand or not
         self.searchBool = True
@@ -331,7 +329,7 @@ class ImageListener(Node):
             depth_image_3d = np.dstack((depth_image,depth_image,depth_image)) # depth image is 1 channel, color is 3 channels
             bg_removed = np.where((depth_image_3d > self.clipping_distance) | (depth_image_3d <= 200), grey_color, color_image)
 
-            # make bg_removed as a binary image.
+            # make bg_removed as a binary image. And is only used to visulatiation.
             binary_bg_removed = cv.cvtColor(bg_removed,cv.COLOR_RGB2GRAY)
 
 
@@ -418,14 +416,14 @@ class ImageListener(Node):
             # gets the first max value coordinate from dialated depth.
             isolate_XY_max_Depth_Loc = [XY_max_Depth_Loc[1][0],XY_max_Depth_Loc[0][0]]
 
-            # creates a circle around the first max value in dialated depth
+            # creates a circle around the first max value in dialated depth. This is done for vizualitaion.
             cv.circle(distTrans,isolate_XY_max_Depth_Loc,20,255,thickness=3)
 
             # generates a point cloud from the depth image.
             x,y,z = self.convert_depth_frame_to_pointcloud(depth_image,self.camera_intrinsics)
             xyz = np.dstack((x,y,z)) # this is to stack the x,y,z arrays into a 3d array.
 
-            # normalizes the dialated depth image to be between 0 and 1. so that it can be shown.
+            # normalizes the dialated depth image to be between 0 and 1. so that it can be shown. This is done for vizualitaion.
             distTrans = cv.normalize(distTrans,distTrans,0,1.0,cv.NORM_MINMAX)
 
 

@@ -18,7 +18,7 @@ class poseSender(Node):
         # initialize the node and give it a name (pose_sender).
         super().__init__('pose_sender')
 
-        # create a tf broadcaster that will publish a TransformStamped message.
+        # create a tf broadcaster that will publish a TransformStamped message. This is done for vizualisation.
         self.tf_broadcaster = TransformBroadcaster(self)
 
 
@@ -162,46 +162,46 @@ class poseSender(Node):
                               [0                  , 0                  , 0                  , 1        ]]
 
 
-        dgree90 = [[-1 , 0   , 0 , 0],
-                   [0  , -1  , 0 , 0],
-                   [0  , 0   , 1 , 0],
-                   [0  , 0   , 0 , 1]]
+        dgree180 = [[-1 , 0   , 0 , 0],
+                    [0  , -1  , 0 , 0],
+                    [0  , 0   , 1 , 0],
+                    [0  , 0   , 0 , 1]]
 
-        frame_camera_hand = np.dot(dgree90,frame_camera_hand)
+        frame_camera_hand = np.dot(dgree180,frame_camera_hand)
 
-        frame_base_camera = np.dot(frame_base_camera,frame_camera_hand)
+        frame_base_hand = np.dot(frame_base_camera,frame_camera_hand)
         
         
-        ####### send tf frame_base_camera   #########################################
-        tf_frame_base_camera = TransformStamped()
+        ####### send tf frame_base_hand   #########################################
+        tf_frame_base_hand = TransformStamped()
 
-        tf_frame_base_camera.header.stamp = self.get_clock().now().to_msg()
-        tf_frame_base_camera.header.frame_id = 'base'
-        tf_frame_base_camera.child_frame_id = 'frame_base_hand'
-        tf_frame_base_camera.transform.translation.x = frame_base_camera[0][3]
-        tf_frame_base_camera.transform.translation.y = frame_base_camera[1][3]
-        tf_frame_base_camera.transform.translation.z = frame_base_camera[2][3]
+        tf_frame_base_hand.header.stamp = self.get_clock().now().to_msg()
+        tf_frame_base_hand.header.frame_id = 'base'
+        tf_frame_base_hand.child_frame_id = 'frame_base_hand'
+        tf_frame_base_hand.transform.translation.x = frame_base_hand[0][3]
+        tf_frame_base_hand.transform.translation.y = frame_base_hand[1][3]
+        tf_frame_base_hand.transform.translation.z = frame_base_hand[2][3]
 
-        tf_quan_base_camera = tf.quaternion_from_matrix(frame_base_camera)
+        tf_quan_base_hand = tf.quaternion_from_matrix(frame_base_hand)
 
 
-        tf_frame_base_camera.transform.rotation.x = tf_quan_base_camera[0]
-        tf_frame_base_camera.transform.rotation.y = tf_quan_base_camera[1]
-        tf_frame_base_camera.transform.rotation.z = tf_quan_base_camera[2]
-        tf_frame_base_camera.transform.rotation.w = tf_quan_base_camera[3]
+        tf_frame_base_hand.transform.rotation.x = tf_quan_base_hand[0]
+        tf_frame_base_hand.transform.rotation.y = tf_quan_base_hand[1]
+        tf_frame_base_hand.transform.rotation.z = tf_quan_base_hand[2]
+        tf_frame_base_hand.transform.rotation.w = tf_quan_base_hand[3]
 
-        self.tf_broadcaster.sendTransform(tf_frame_base_camera)
-        ################ tf send for frame_base_camera #############################
+        self.tf_broadcaster.sendTransform(tf_frame_base_hand)
+        ################ tf send for frame_base_hand #############################
 
 
 
 
         frame_hand_transfer  = np.array([[-1.0,   0.0,   0.0,  0.0], 
-                                         [ 0.0,  -1.0,   0.0,  0.0],
+                                         [ 0.0,   1.0,   0.0,  0.0],
                                          [ 0.0,   0.0,  -1.0,  0.1],
                                          [ 0.0,   0.0,   0.0,  1.0]])
 
-        frame_base_transfer = np.dot(frame_base_camera, frame_hand_transfer)
+        frame_base_transfer = np.dot(frame_base_hand, frame_hand_transfer)
 
 
         ####### send tf frame_base_transfer   #########################################
